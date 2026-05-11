@@ -1,7 +1,7 @@
 from ..core.models import RequestContext, SignalResult
 from ..vendor import detect_sqli, detect_xss, normalize
 from .base import SoftSignal
-from .patterns import check_path, check_sql, check_xss
+from .patterns import check_cmd, check_nosql, check_path, check_sql, check_ssti, check_xss
 
 
 class PayloadSignal(SoftSignal):
@@ -23,6 +23,9 @@ class PayloadSignal(SoftSignal):
                 sql_pat = raw_sql
         xss_pat = check_xss(text)
         path_pat = check_path(text)
+        cmd_pat = check_cmd(text)
+        ssti_pat = check_ssti(text)
+        nosql_pat = check_nosql(text)
 
         hits: list[tuple[float, str]] = []
         if sql_lib["hit"]:
@@ -35,6 +38,12 @@ class PayloadSignal(SoftSignal):
             hits.append((xss_pat[1], xss_pat[2]))
         if path_pat[0]:
             hits.append((path_pat[1], path_pat[2]))
+        if cmd_pat[0]:
+            hits.append((cmd_pat[1], cmd_pat[2]))
+        if ssti_pat[0]:
+            hits.append((ssti_pat[1], ssti_pat[2]))
+        if nosql_pat[0]:
+            hits.append((nosql_pat[1], nosql_pat[2]))
 
         if not hits:
             return SignalResult(score=0.0, reason="clean")
@@ -50,5 +59,8 @@ class PayloadSignal(SoftSignal):
             "sql_pat": sql_pat[2],
             "xss_pat": xss_pat[2],
             "path_pat": path_pat[2],
+            "cmd_pat": cmd_pat[2],
+            "ssti_pat": ssti_pat[2],
+            "nosql_pat": nosql_pat[2],
         }
         return SignalResult(score=score, reason=top[1], detail=detail)

@@ -27,6 +27,9 @@ def test_benign_matrix_stays_clean():
         "the union hall opens at six",
         "javascript is disabled in this browser",
         "we benchmarked the service last week",
+        "How does $(HOME) expansion work in Bash?",
+        "render {{ user.name }} in the template",
+        "Use $gt for greater-than filters in Mongo docs",
     ]
 
     for text in cases:

