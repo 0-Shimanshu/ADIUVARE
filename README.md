@@ -301,6 +301,28 @@ Adiuvare is in a good place for:
 There are still edges around distributed shared state and disconnected TUI
 semantics. Those are documented plainly in [docs/limitations.md](docs/limitations.md).
 
+## Payload detection boundaries
+
+The current payload scoring is intentionally focused and strongest on a narrow set of high-signal patterns:
+
+- SQL injection shapes (e.g. `SELECT`, `UNION`, tautologies like `1=1`)
+- XSS markers (e.g. `<script>`, inline event handlers)
+- path traversal (`../` and encoded variants)
+- nearby normalization and encoding variants of the above
+
+Coverage outside these families is uneven. Broader suspicious inputs and less common attack forms may not be scored as consistently.
+
+The system also does not fully distinguish between malicious payloads and literal discussion of those payloads. Benign text can still trigger payload signals depending on context and thresholds.
+
+Examples:
+
+- "How do I write SELECT * FROM users in a tutorial?"
+- "How do I print <script> literally in docs?"
+
+These are not attacks, but may still raise payload-related scores.
+
+For domains where payload-like strings are common (documentation, tutorials, debugging tools), use custom signals, route-level policies, or threshold tuning to avoid over-triggering.
+
 ## Docs
 
 - [Quickstart](docs/quickstart.md)
