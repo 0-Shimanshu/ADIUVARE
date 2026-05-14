@@ -92,3 +92,24 @@ def test_guard_check_sync_returns_event():
     gate, event = guard.check_sync("u2", payload="hello")
     assert gate.passed is True
     assert event is not None
+
+
+def test_guard_check_sync_flags_command_probe_strings():
+    guard = Guard()
+
+    for payload in (";cat /etc/passwd", "$(cat /etc/passwd)"):
+        gate, event = guard.check_sync("u3", payload=payload)
+        assert gate.passed is True
+        assert event is not None
+        assert event.breakdown["payload"] >= 0.29
+        assert event.detail["signal_reasons"]["payload"].startswith("cmd_")
+
+
+def test_guard_check_sync_keeps_benign_command_docs_clean():
+    guard = Guard()
+    gate, event = guard.check_sync("u4", payload="How do I use $(...) in Bash?")
+
+    assert gate.passed is True
+    assert event is not None
+    assert event.breakdown["payload"] == 0.0
+    assert event.detail["signal_reasons"]["payload"] == "clean"
