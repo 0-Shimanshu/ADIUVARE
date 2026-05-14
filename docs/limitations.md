@@ -185,6 +185,55 @@ Before a broader publish story is in place, the smoothest setup is still:
 That is fine for contributors and early adopters. It is simply different from a
 fully polished "pip install from PyPI and go" story on every machine.
 
+## Payload detection limits
+
+Payload inspection is intentionally narrow and focused on high-signal patterns. It does not attempt full coverage of all attack classes.
+
+### Strong areas
+
+- common SQL injection patterns such as `SELECT`, `UNION`, and simple tautologies
+- basic XSS markers such as `<script>` and inline JavaScript
+- path traversal sequences like `../` and encoded variants
+- simple normalization and encoding variants of these patterns
+
+### Known gaps
+
+- broader or uncommon attack families
+- multi-step or context-dependent payloads
+- deeply obfuscated or fragmented inputs
+- domain-specific payload formats
+
+These cases may be detected inconsistently or assigned lower scores.
+
+### False positives
+
+The system can over-trigger on benign content that includes risky strings.
+
+Typical cases:
+
+- SQL examples in tutorials or documentation
+- literal HTML or script tags in docs
+- copied payloads used for explanation or testing
+
+Examples:
+
+- "How do I write SELECT * FROM users in a tutorial?"
+- "How do I print <script> literally in docs?"
+
+These are not attacks, but may still produce elevated payload scores.
+
+### Practical implication
+
+Payload detection should not be treated as complete or authoritative.
+
+Use:
+
+- custom signals
+- route-level policies
+- threshold tuning
+
+to adapt behavior to real workloads and reduce false positives.
+
 ## Related
 
 - [Installation](installation.md)
