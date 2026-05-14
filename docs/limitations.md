@@ -190,3 +190,9 @@ fully polished "pip install from PyPI and go" story on every machine.
 - [Installation](installation.md)
 - [Configuration](configuration.md)
 - [TUI](operator/tui.md)
+
+## TUI Disabled Actions
+
+Some operator actions may become unavailable depending on connection state or current selection context.
+
+Unavailable actions are visually dimmed to improve operator clarity and awareness.

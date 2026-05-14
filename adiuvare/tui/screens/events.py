@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 
 class EventsScreen(WorkspaceView):
-    shortcut_hints = "[1-7] tabs  [f] filter  [c] confirm  [w] whitelist  [m] monitor  [e] export"
+    shortcut_hints = "[1-7] tabs  [f] filter  [c] confirm  [w] whitelist  [m] monitor  [e] export\nUnavailable actions appear dimmed when not available in the current state."
     primary_id = "events-table"
     search_id = "events-identity-filter"
 
