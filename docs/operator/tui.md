@@ -1,279 +1,127 @@
-# TUI
+# TUI Operator Guide
 
-The TUI is Adiuvare's richer operator console. It gives you live screens for
-traffic, reviewable events, config edits, signal mix, AI summaries, audit
-history, and recent control-plane changes.
+The Adiuvare TUI is a multi-screen terminal console for monitoring and managing a running WAF runtime. It is built with Textual and connects to the runtime over a Unix socket.
 
-## Launch
+---
+
+## Launching the TUI
+
+Run the `adv` command with no arguments:
 
 ```bash
 adv
 ```
 
-If there is no `adiuvare.yaml` yet, startup sends you through setup first.
+If no `adiuvare.yaml` is found, the setup wizard runs first. Once config exists, the TUI opens immediately and attempts to connect to the runtime socket.
 
-## Connected and disconnected mode
+To install TUI dependencies if missing:
 
-When connected, the TUI can:
-
-- subscribe to live rows
-- request runtime snapshots
-- send runtime commands
-- patch a small set of live runtime values
-
-When disconnected, it falls back to:
-
-- local config reads
-- local audit reads
-- cached recent views where possible
-
-The TUI is still useful offline. It is just strongest when attached to a
-running runtime.
-
-## Navigation
-
-The current TUI has seven screens:
-
-1. `Monitor`
-2. `Events`
-3. `Config`
-4. `Signals`
-5. `AI`
-6. `Audit`
-7. `Changes`
-
-Common keys:
-
-```text
-[1-7] switch screens
-[up/down] move in tables
-[Tab] move between inputs
-[q] quit
+```bash
+pip install -e ".[tui]"
 ```
 
-The TUI refreshes automatically every 3 seconds.
+---
 
-## Monitor
+## Connection States
 
-Monitor is the landing screen. It is the fastest answer to:
+The header bar shows the current connection state at all times:
 
-- are we connected?
-- which backend are we on?
-- are recent events flowing?
-- what does the current decision mix look like?
+| Header indicator | Meaning |
+|-----------------|---------|
+| `connected` (green) | Live runtime socket found; all actions available |
+| `offline` (orange) | No socket found or runtime unreachable; read-only mode |
 
-It shows:
+The footer center shows **live link active** when connected, and is blank when offline.
 
-- recent rows
-- runtime status
-- decision thresholds
-- verdict mix
-- aggregate signal pressure
-- top identities
-- hot endpoints
+The header also shows the current **mode** (observe / enforce), **backend**, and **strictness** level, all read from the runtime snapshot or local config.
 
-![Monitor screen](../assets/tui/monitor.png)
+---
 
-## Events
+## Screens
 
-Events is the review queue. It focuses on non-allow rows that need operator
-attention.
+Switch between screens using number keys or by clicking the tab buttons at the top.
 
-It shows:
+### 1 — Monitor
 
-- verdict
-- score
-- identity
-- endpoint
-- IP
-- dominant signal
-- age
+**Works offline:** Yes (reads from local audit cache)
 
-The lower panes show:
+The main dashboard. Shows a live overview of runtime state including recent event counts, active identities, verdicts, and signal pressure. In connected mode, data refreshes automatically every 3 seconds and updates instantly on new stream events. In offline mode, data is read from the local audit database.
 
-- selected event detail
-- signal breakdown
-- identity context
-- available actions
+### 2 — Events
 
-Current actions include:
+**Works offline:** Yes (reads from local audit cache)
 
-- confirm block
-- whitelist
-- monitor identity
-- unmonitor identity
-- unblock + monitor
-- ban IP
-- unban IP
-- export JSON
+Shows the event stream — individual request decisions made by the WAF. In connected mode, new rows arrive in real time via the stream loop (up to 145 rows in memory). In offline mode, rows are loaded from the audit database.
 
-![Events screen](../assets/tui/events.png)
+### 3 — Config
 
-## Config
+**Works offline:** Partial
 
-Config is the live operator settings screen. It is built around the current
-runtime shape, not a generic admin panel.
+Displays and edits the current `adiuvare.yaml` configuration. Config is always read from and written to disk, so this screen works offline. However, applying a config change to the running runtime (pushing thresholds, mode, AI settings) requires a live connection. When connected, config changes are sent to the runtime immediately after saving to disk.
 
-You can edit:
+### 4 — Signals
 
-- decision thresholds
-- signal weights
-- AI settings
-- runtime settings
-- monitored defaults
-- profile strictness
+**Works offline:** Yes (reads from local audit cache)
 
-It also shows a small recent-changes preview.
+Shows signal pressure and breakdown data — which detection signals (payload, behavior, identity) are contributing most to recent verdicts. Populated from stream rows when connected, or from the audit database when offline.
 
-Typical flow:
+### 5 — AI
 
-```text
-1. Open Config
-2. Edit one field
-3. Press [S]
-4. Recheck Monitor or Changes
-```
+**Works offline:** Yes (degrades to local analysis)
 
-Some fields patch live when connected. Others are saved for the next reload or
-startup.
+The AI analyst screen. Operators can ask questions about recent traffic patterns and get a report with findings and recommendations. When connected, queries are forwarded to the runtime AI analyst. When offline, the screen falls back to local audit summarisation using the last 500 rows from the past 7 days. Answers in offline mode may be less detailed.
 
-![Config screen](../assets/tui/config.png)
+### 6 — Audit
 
-## Signals
+**Works offline:** Yes (local reads only)
 
-Signals is the live scoring view.
+Displays the audit log — a record of all operator actions (blocks confirmed, IPs banned, config patches, etc.). This screen always reads from the local audit database and is fully available offline.
 
-It shows:
+### 7 — Changes
 
-- built-in signal families
-- current weights
-- status
-- recent hit counts
-- route overview
-- route AI mode
-- aggregate signal pressure
-- top contributors
+**Works offline:** Yes (local reads only)
 
-Use it when you want to understand why recent traffic is scoring the way it is.
+Shows a history of config and identity changes written to the audit log. Fully available offline.
 
-![Signals screen](../assets/tui/signals.png)
+---
 
-## AI
+## State-Changing Actions
 
-The AI screen has two modes:
+The following actions mutate runtime state. When connected, they are dispatched to the runtime over the socket. When offline, they are written to the local audit log only and **are not replayed when the runtime reconnects**.
 
-- `Analyze`
-- `Ask`
+| Action | Connected behaviour | Offline behaviour |
+|--------|-------------------|------------------|
+| Confirm block (identity) | Sent to runtime immediately | Written to audit log only |
+| Whitelist identity | Sent to runtime immediately | Written to audit log only |
+| Monitor identity | Sent to runtime immediately | Written to audit log only |
+| Unmonitor identity | Sent to runtime immediately | Written to audit log only |
+| Unblock + monitor | Sent to runtime immediately | Written to audit log only |
+| Ban IP | Sent to runtime immediately | Written to audit log only |
+| Unban IP | Sent to runtime immediately | Written to audit log only |
+| Apply config changes | Written to disk + sent to runtime | Written to disk only |
 
-### Analyze
+---
 
-Analyze builds a compact report-style summary from recent audit rows.
+## Keyboard Reference
 
-It shows:
+| Key | Action |
+|-----|--------|
+| `1` | Switch to Monitor screen |
+| `2` | Switch to Events screen |
+| `3` | Switch to Config screen |
+| `4` | Switch to Signals screen |
+| `5` | Switch to AI screen |
+| `6` | Switch to Audit screen |
+| `7` | Switch to Changes screen |
+| `r` | Refresh the current screen |
+| `q` | Quit the TUI |
 
-- event totals
-- flagged and blocked counts
-- decision distribution
-- signal pressure
-- a short summary
-- recommendations
-- report source
+---
 
-Source is shown clearly because results may come from runtime AI or local
-analysis fallback.
+## How the TUI Signals Unavailable State
 
-![AI Analyze screen](../assets/tui/ai-analyze.png)
-
-### Ask
-
-Ask is the bounded operator assistant.
-
-It is meant for questions like:
-
-- what are the top threats?
-- who is most active?
-- should I change thresholds?
-- explain payload signals
-
-The header shows:
-
-- whether AI is connected
-- which model is configured
-- whether local fallback is available
-
-![AI Ask screen](../assets/tui/ai-ask.png)
-
-## Audit
-
-Audit is the broader recent-history screen. Unlike Events, it includes allow
-rows too.
-
-It shows:
-
-- the recent audit table
-- selected event detail
-- signal breakdown
-- AI detail when present
-
-Use it when you want the larger recent record instead of only the review queue.
-
-![Audit screen](../assets/tui/audit.png)
-
-## Changes
-
-Changes is the control-plane history screen.
-
-It tracks:
-
-- operator actions
-- config writes
-- runtime patches
-- control-plane events such as ban, unban, monitor, and whitelist actions
-
-The detail pane shows:
-
-- kind
-- age
-- recorded time
-- target
-- summary
-- patch payload when present
-
-![Changes screen](../assets/tui/changes.png)
-
-## Typical workflows
-
-Review live traffic:
-
-```text
-1. Open Monitor
-2. Move to Events for reviewable rows
-3. Inspect the selected row
-4. Take an action if needed
-5. Verify the result in Changes
-```
-
-Tune thresholds:
-
-```text
-1. Open Config
-2. Change one threshold
-3. Save
-4. Check Changes for the patch record
-5. Return to Monitor or Events
-```
-
-Ask for a summary:
-
-```text
-1. Open AI
-2. Use Analyze for the report view
-3. Use Ask for a direct question
-4. Check the source label on the result
-```
-
-## Related
-
-- [CLI](cli.md)
-- [Runtime stream](runtime-stream.md)
-- [Limitations](../limitations.md)
+The TUI does not disable or grey out individual action buttons based on connection state. Instead:
+
+- When offline, state-changing actions fall back to writing to the local audit log. The footer note updates to confirm what happened (e.g. `runtime command sent` or `runtime command failed`).
+- If the stream drops mid-session, the footer shows **stream link dropped**. The TUI continues running with the last cached data.
+- The header **offline** indicator is always visible when the runtime is unreachable, giving operators a persistent signal that live dispatch is not active.

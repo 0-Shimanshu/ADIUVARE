@@ -1,192 +1,37 @@
 # Limitations
 
-Adiuvare is usable at `0.1.0`, but it still has real boundaries worth knowing
-before you build around it. This is the plainspoken version.
+## TUI Connectivity
 
-## Redis is a working backend, not full distributed coordination
+The TUI operates in two distinct modes depending on whether a live runtime socket is reachable. The runtime is located by scanning for `adiuvare*.sock` files in the system temp directory. If no socket is found, or the socket does not respond, the TUI starts in offline mode.
 
-The practical backend story today is:
+### Connected Mode
 
-- `sqlite` -> normal local single-instance backend
-- `redis` -> supported backend for a single running app too
+When a live runtime socket is found and responsive, all screens and actions are fully available. The header bar shows **connected** in green and the footer shows **live link active**.
 
-What Redis already does well:
+Real-time event rows stream from the runtime and are kept in memory (up to 145 rows). The runtime snapshot, route overview, and all state-changing commands are sent directly to the running process.
 
-- event publication
-- replay for operator clients
-- runtime command flow over the Redis transport
+### Disconnected Mode
 
-What is still partial:
+When no socket is found or the runtime is unreachable, the TUI starts in offline mode. The header shows **offline** in orange and the footer link status is blank.
 
-- shared identity state across processes
-- cluster-wide rate and block behavior
-- cluster-wide whitelist and ban state as one coordinated store
+In offline mode:
 
-If you set:
+- All seven screens are still accessible and navigable.
+- Screens read from the local audit database and cached config instead of the live runtime.
+- State-changing actions (block, whitelist, monitor, ban IP, apply config) write their intent to the local audit log rather than dispatching to the runtime. These are **not replayed** automatically when the runtime reconnects.
+- AI analysis falls back to local audit summarisation instead of querying the runtime AI.
+- The stream loop does not run; no new event rows arrive until reconnection.
 
-```yaml
-meta:
-  instances: multi
-```
+### Stream Interruption During a Session
 
-read that as a deployment hint, not a promise that full distributed runtime
-coordination is already solved.
+If the runtime socket drops while the TUI is already running, the footer shows **stream link dropped**. Screens continue to display the last cached data. The TUI does not exit or attempt automatic reconnection; it must be restarted to re-establish the stream.
 
-## Some TUI behavior depends on a live runtime
+---
 
-The TUI works in both connected and disconnected states, but those states are
-not identical.
+## Known Constraints
 
-When connected, it can:
-
-- subscribe to live rows
-- ask for runtime snapshots
-- send runtime commands
-
-When disconnected, it falls back to:
-
-- local config reads
-- local audit reads
-- cached recent views where possible
-
-One important consequence today:
-
-- state-changing operator actions such as `ban_ip`, `unban_ip`,
-  `monitor_identity`, `unmonitor_identity`, and `unblock_monitor` are
-  authoritative when the TUI is connected to a live runtime
-- a disconnected TUI can still show cached data and control-plane history, but
-  that is not the same thing as mutating live runtime state
-
-This is an area to tighten further. The long-term goal is to make the offline
-story more explicit, either by disabling actions that cannot be applied for
-real or by giving local single-instance mode a true local mutation path.
-
-That means the TUI is strongest when attached to a running runtime.
-
-## The TUI is still a bounded operator console
-
-The current TUI covers:
-
-- Monitor
-- Events
-- Config
-- Signals
-- AI
-- Audit
-- Changes
-
-That is a useful live console. It is still lighter than a larger standalone
-operator platform.
-
-Current product boundaries:
-
-- Audit and Events are recent-window surfaces, not deep paginated
-  investigation tools
-- Signals explains the live signal mix, but it is not a full route-policy editor
-- AI Analyze is strongest as a compact summary, not a long-form investigation system
-- AI Ask is bounded analysis, not a general-purpose copilot
-- some Config fields are saved for next reload or startup instead of fully hot-applied
-
-## Saved config and live config are not the same thing
-
-The Config screen and `adv config set` both write `adiuvare.yaml`, but not
-every field behaves the same way in the already-running app.
-
-The best live-patch candidates are:
-
-- threshold bands
-- observe mode
-- global AI mode
-
-Other values are still mainly:
-
-- saved to file
-- picked up on the next reload or startup
-
-That matters most for:
-
-- backend selection
-- Redis connection settings
-- monitored defaults
-- some AI connection details
-
-## AI requires an external endpoint
-
-The AI path is real, but it depends on an Ollama-compatible endpoint and a
-usable model being available there.
-
-If the endpoint is unavailable, Adiuvare degrades cleanly instead of failing
-the whole runtime.
-
-That is also why there are two related but different AI experiences:
-
-- request-time AI for verdict shaping
-- TUI AI for operator summaries and bounded questions
-
-They should not be expected to produce the same style of output.
-
-## libinjection still has a build edge
-
-What works already:
-
-- a checked-in Windows DLL
-- the vendored source tree
-- local build scripts
-- Python fallback heuristics
-
-What is not fully finished:
-
-- automated wheel builds for every platform
-- a completely smooth binary story on every user machine
-
-If the bundled binary is not right for the target machine, you may still need a
-local build step.
-
-## Windows local stream uses a fallback
-
-On runtimes without `asyncio.start_unix_server`, the local stream uses:
-
-- a localhost TCP server
-- plus a small `.sock` marker file for discovery
-
-That keeps the operator path working, but it is not the same thing as a true
-Unix socket.
-
-## The CLI is intentionally smaller than the TUI
-
-The CLI is meant for quick tasks:
-
-- init
-- status
-- logs
-- report
-- small config edits
-- simple live actions such as `ban-ip` and `unban-ip`
-
-It is not trying to be a full terminal version of the TUI.
-
-## Public API is smaller than the module tree
-
-Adiuvare has many internal modules. Only a smaller set should be treated as the
-public API.
-
-Use the pages in `docs/api/` as the real boundary. That keeps app code from
-coupling itself to internals that may still move.
-
-## Source install is still the smoothest pre-release path
-
-Before a broader publish story is in place, the smoothest setup is still:
-
-- clone the repo
-- create a virtual environment
-- `pip install .`
-- add extras like `.[tui]` or `.[redis]` when needed
-
-That is fine for contributors and early adopters. It is simply different from a
-fully polished "pip install from PyPI and go" story on every machine.
-
-## Related
-
-- [Installation](installation.md)
-- [Configuration](configuration.md)
-- [TUI](operator/tui.md)
+- **No command buffering.** State-changing actions issued in offline mode are written to the local audit log only. They are not queued for replay when the runtime comes back online.
+- **No automatic reconnection.** Once the stream drops mid-session, the TUI must be restarted to reconnect.
+- **Event row cap.** The in-memory stream buffer holds a maximum of 145 rows. Older rows are dropped as new ones arrive.
+- **Config apply requires connection.** Editing config in the TUI always writes to disk. Pushing the change to a running runtime requires a live socket; without one, only the file is updated.
+- **AI screen degrades gracefully.** When offline, the AI screen answers questions using local audit data. Answers may be less detailed than those produced by a connected runtime with full AI access.

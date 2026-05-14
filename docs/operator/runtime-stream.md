@@ -1,146 +1,94 @@
 # Runtime Stream
 
-Adiuvare has a local runtime stream behind the operator surface. Most people do
-not talk to it directly, but it is the reason `adv status`, the TUI, and live
-runtime actions feel connected to the running app.
+The runtime stream is the live channel between the TUI and a running Adiuvare WAF process. This document explains how the stream is established, what it carries, and what operators should expect when it is healthy, degraded, or absent.
 
-## Local runtime stream
+---
 
-The runtime stream carries:
+## How the Stream is Established
 
-- recent event replay for new clients
-- live event broadcast
-- runtime snapshots
-- runtime commands from the operator tools
+When the TUI starts, it scans the system temp directory for Unix socket files matching the pattern `adiuvare*.sock`. If multiple sockets are found, it picks the most recently modified one.
 
-That is what lets the CLI and TUI feel live without sitting inside the same
-request handler process.
+The socket path is passed into the TUI app at launch. If no socket is found, `socket_path` is `None` and the TUI starts in offline mode without attempting any connection.
 
-## Local backend
+There is no retry loop on startup. If the socket is absent when `adv` is run, the TUI starts offline and stays offline for that session.
 
-The normal local path is `UnixSocketEventStream`.
+---
 
-On platforms with Unix-domain support, it uses a real socket path. It supports:
+## What the Stream Carries
 
-- replay buffer on connect
-- live broadcast to connected clients
-- runtime commands over the same transport
+Once connected, the TUI establishes two concurrent async tasks:
 
-## Windows fallback
+**Stream loop (`_stream_loop`)** — subscribes to the runtime event feed. Each incoming row is a WAF decision (a request that was allowed, flagged, throttled, or blocked). Rows are prepended to an in-memory list capped at 145 entries. All screens that show event data read from this list when connected.
 
-On runtimes without `asyncio.start_unix_server`, the local path falls back to:
+**Runtime refresh (`_refresh_runtime`)** — periodically calls two runtime commands: `get_runtime_snapshot` (returns current runtime state: mode, backend, banned IPs, identity counts, thresholds, etc.) and `get_route_overview` (returns the list of seen routes). This runs on the 3-second auto-refresh interval and after every state-changing command.
 
-- localhost TCP
-- a small `.sock` marker file containing the host and port
+---
 
-That keeps discovery simple for the CLI and TUI, even though it is not a true
-Unix socket on Windows.
+## Stream Lifecycle
 
-## Redis backend
-
-You can also use a Redis-backed event stream:
-
-```yaml
-runtime:
-  backend: redis
-  redis_url: redis://127.0.0.1:6379/0
+```
+adv launched
+    │
+    ├─ Socket found ──► TUI starts connected
+    │                       │
+    │                       ├─ stream_loop: live event rows
+    │                       ├─ refresh_runtime: snapshot + routes
+    │                       └─ auto-refresh every 3s
+    │
+    └─ No socket ────► TUI starts offline
+                           │
+                           └─ reads audit DB + local config only
 ```
 
-What Redis already gives you:
+If the stream drops during a session, `_stream_loop` catches the exception and sets the footer to **stream link dropped**. No reconnection is attempted. The TUI continues running with cached data.
 
-- Redis-backed event publication
-- replay stored in Redis
-- operator clients that connect through that backend
-- runtime command flow over Redis transport
+---
 
-What it does not solve by itself:
+## State-Changing Commands
 
-- full shared identity state
-- cluster-wide rate state
-- cluster-wide whitelist coherence
+When an operator takes an action in the TUI (confirm block, ban IP, apply config, etc.), the command is sent to the runtime via `_send_command`. This is an async call over the socket using `EventStreamClient`.
 
-## Runtime snapshots
+On success, the footer shows **runtime command sent** and the runtime snapshot refreshes immediately. On failure, the footer shows **runtime command failed** and no state is changed in the runtime.
 
-Connected operator tools can ask for a runtime snapshot. That snapshot includes
-things like:
+Commands are fire-and-forget within the session. There is no acknowledgement queue and no retry. If the socket drops between the operator action and the runtime receiving it, the command is lost.
 
-- backend
-- observe-only mode
-- AI mode
-- thresholds
-- configurable weights
-- banned IP count
-- monitored identity count
-- recent event count
-- route overview
+**When offline**, the same action methods (`ban_ip`, `confirm_block`, `whitelist_identity`, etc.) write the intent to the local audit log via `AuditLog.write_patch`. These entries are visible in the Changes screen but are **not dispatched to the runtime** and are **not replayed** when a runtime starts later.
 
-That is why `adv status`, Monitor, Signals, and AI can show live runtime
-context instead of only static file values.
+---
 
-## Runtime commands
+## Runtime Snapshot
 
-Current command names include:
+The snapshot is the TUI's authoritative view of live runtime state. It includes:
 
-- `get_runtime_snapshot`
-- `confirm_block`
-- `unblock_whitelist`
-- `monitor_identity`
-- `unmonitor_identity`
-- `unblock_monitor`
-- `ban_ip`
-- `unban_ip`
-- `patch_config`
-- `get_analysis_report`
-- `get_route_overview`
-- `ask_ai_analyst`
+- Connection status (`connected`)
+- Operating mode (`observe_only`)
+- Backend type and strictness
+- Banned IP count and monitored identity count
+- Threshold values (flag, throttle, block)
+- Weight values (payload, behavior, identity)
+- AI mode and model
+- Socket path and audit/state DB paths
 
-The CLI and TUI use these under the hood. For normal use, treat them as
-implementation details behind the supported operator surface.
+When connected, the snapshot is refreshed from the runtime every 3 seconds and after every command. When offline, the snapshot is built entirely from local config values, with live fields (banned IPs, event counts, etc.) defaulting to zero or empty.
 
-## Connected status example
+---
+
+## Config Watcher
+
+The TUI also watches `adiuvare.yaml` for changes on disk via `ConfigWatcher`. If the file changes between ticks (checked every 1 second), the config is reloaded and the active screen refreshes. This works regardless of connection state. The footer shows **config changed on disk** when this happens.
+
+---
+
+## Debugging Connection Issues
+
+Check whether the runtime is running and has created a socket:
 
 ```bash
 adv status
 ```
 
-```text
-config: H:\ADIUVARE\adiuvare.yaml
-runtime: connected
-socket: C:\Users\me\AppData\Local\Temp\adiuvare.sock
-backend: sqlite
-framework: fastapi
-instances: single
-observe_only: False
-ai_mode: assist
-banned_ips: 1
-recent_events: 7
-```
+This command reads the same socket discovery logic and prints `runtime: connected` or `runtime: offline` along with the socket path if found.
 
-That is the easy signal that the operator surface can reach the live runtime.
+If the socket exists but the TUI shows offline, the runtime process may have crashed after creating the socket. Remove stale socket files from the temp directory and restart the runtime.
 
-## What you get from it
-
-The runtime stream solves:
-
-- local operator inspection
-- event replay for new clients
-- live event broadcast
-- runtime snapshot transport
-- runtime command transport
-- Redis-backed event transport when configured
-
-## Boundaries
-
-The runtime stream by itself does not solve:
-
-- full distributed identity state
-- cluster-wide shared rate control
-- cluster-wide shared whitelist state
-
-Those are larger runtime architecture questions.
-
-## Related
-
-- [CLI](cli.md)
-- [TUI](tui.md)
-- [Limitations](../limitations.md)
+To see the socket path the TUI found, check the Monitor screen's runtime snapshot panel (the `stream_path` field) when connected.
