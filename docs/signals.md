@@ -16,7 +16,7 @@ breakdown:
 You can read that as: the content carried most of the risk, behavior added a
 little pressure, and the identity already had some history.
 
-## payload
+## Payload
 
 `payload` is the main content-focused signal family. It carries the most weight
 for things like:
@@ -34,7 +34,44 @@ Today it combines:
 - XSS pattern checks
 - path traversal checks
 
-## behavior
+### Payload coverage boundaries
+
+Payload detection is intentionally focused on a narrow set of high-signal patterns.
+
+#### Strong coverage
+
+- SQL injection shapes such as `SELECT`, `UNION`, and simple tautologies
+- XSS markers such as `<script>` and inline JavaScript patterns
+- path traversal sequences like `../` and encoded variants
+
+Detection is strongest when these appear directly or with light obfuscation.
+
+#### Partial coverage
+
+- less common injection techniques
+- domain-specific payload formats
+- heavily transformed or fragmented inputs
+
+These may be detected inconsistently or assigned lower scores.
+
+#### False positives
+
+Literal use of risky strings can still contribute to payload scoring.
+
+Common cases:
+
+- documentation examples
+- tutorials demonstrating SQL or HTML
+- logs or debugging output containing payload-like text
+
+Examples:
+
+- "SELECT * FROM users"
+- "<script>alert(1)</script>"
+
+Payload signals contribute to the overall score. They are not a final decision on their own.
+
+## Behavior
 
 `behavior` is about request shape and request rate.
 
@@ -47,13 +84,13 @@ It looks at:
 This is what helps when the payload is plain but the caller shape still looks
 wrong.
 
-## identity
+## Identity
 
 `identity` carries memory forward from earlier requests. It uses the identity
 store and EWMA score so repeated noisy behavior can keep contributing risk even
 when no single request looks dramatic on its own.
 
-## context
+## Context
 
 `context` is the small supporting signal based on where and how a request
 lands.
