@@ -1,8 +1,7 @@
 import asyncio
-import json
 
 from .sqlalchemy import _sink_mode
-from . import build_http_ctx
+from . import build_http_ctx, ctx_payload
 
 
 class JsonResponse:
@@ -35,26 +34,9 @@ class AdiuvareMiddleware:
         if route_cfg.get("exempt"):
             return self._get_response(request)
 
-        query_params = getattr(request, "GET", {})
-        data = {}
-        for key in query_params:
-            vals = query_params.getlist(key)
-            data[key] = vals[0] if len(vals) == 1 else vals
-
-        if body:
-            try:
-                body_payload = json.loads(body)
-                if isinstance(body_payload, dict):
-                    data.update(body_payload)
-                else:
-                    data["_body"] = body
-            except (json.JSONDecodeError, ValueError):
-                data["_body"] = body
-
-        payload = json.dumps(data) if data else None
         ctx = build_http_ctx(
             identity=identity,
-            payload=payload,
+            payload=ctx_payload(body, meta.get("QUERY_STRING", "")),
             url=path,
             method=method,
             headers=headers,

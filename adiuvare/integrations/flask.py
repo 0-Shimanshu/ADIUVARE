@@ -4,7 +4,7 @@ import json
 from werkzeug.wrappers import Request, Response
 
 from .sqlalchemy import _sink_mode
-from . import build_http_ctx
+from . import build_http_ctx, ctx_payload
 
 
 class AdiuvareMiddleware:
@@ -22,20 +22,8 @@ class AdiuvareMiddleware:
             return self._app(environ, start_response)
 
         body_text = req.get_data(as_text=True) or None
-        data = {}
-        for key in req.args.keys():
-            vals = req.args.getlist(key)
-            data[key] = vals[0] if len(vals) == 1 else vals
-        if body_text:
-            try:
-                body_json = json.loads(body_text)
-                if isinstance(body_json, dict):
-                    data.update(body_json)
-                else:
-                    data["_body"] = body_text
-            except (json.JSONDecodeError, ValueError):
-                data["_body"] = body_text
-        payload = json.dumps(data) if data else None
+        query_text = req.query_string.decode("utf-8") if req.query_string else ""
+        payload = ctx_payload(body_text, query_text)
 
         ctx = build_http_ctx(
             identity=req.headers.get("x-user-id", req.remote_addr or "anon"),

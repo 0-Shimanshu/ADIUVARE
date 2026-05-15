@@ -1,5 +1,4 @@
 import asyncio
-import json
 import threading
 
 from fastapi import Request
@@ -10,7 +9,7 @@ from starlette.types import ASGIApp
 
 from ..core.gate import run_trackA
 from .sqlalchemy import _sink_mode
-from . import build_http_ctx
+from . import build_http_ctx, ctx_payload
 
 
 class AdiuvareMiddleware(BaseHTTPMiddleware):
@@ -30,30 +29,12 @@ class AdiuvareMiddleware(BaseHTTPMiddleware):
         if route_cfg.get("exempt"):
             return await call_next(request)
 
-        body_bytes = await request.body()
-        body_text = body_bytes.decode(errors="replace") if body_bytes else None
-
-        query_data = request.query_params
-        data = {}
-        for key in query_data.keys():
-            vals = query_data.getlist(key)
-            data[key] = vals[0] if len(vals) == 1 else vals
-
-        if body_text:
-            try:
-                body_json = json.loads(body_text)
-                if isinstance(body_json, dict):
-                    data.update(body_json)
-                else:
-                    data["_body"] = body_text
-            except (json.JSONDecodeError, ValueError):
-                data["_body"] = body_text
-
-        payload = json.dumps(data) if data else None
+        body = await request.body()
+        body_text = body.decode() if body else None
 
         ctx = build_http_ctx(
             identity=request.headers.get("x-user-id", request.client.host if request.client else "anon"),
-            payload=payload,
+            payload=ctx_payload(body_text, request.url.query),
             url=str(request.url.path),
             method=request.method,
             headers=dict(request.headers),
