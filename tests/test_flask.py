@@ -138,79 +138,66 @@ def test_flask_route_cfg_can_skip_trackB():
     )
     assert res.status_code == 200
 
-
 def test_flask_payload_merging(monkeypatch):
     import json
     app = Flask(__name__)
     guard = Guard()
-
     captured_payload = None
-
-    class FakeGate:
-        passed = True
-        status_code = 200
-        block_reason = ""
 
     async def fake_inspect(ctx, **kwargs):
         nonlocal captured_payload
         captured_payload = ctx.payload
-        return FakeGate(), None
+        return type('Gate', (), {'passed': True, 'status_code': 200, 'block_reason': ''}), None
 
     monkeypatch.setattr(guard, "inspect", fake_inspect)
     guard.use(app, framework="flask")
 
     @app.post("/merge")
-    def merge():
+    def merge_view():
         return jsonify(ok=True)
 
     client = app.test_client()
     res = client.post(
         "/merge?tag=a&tag=b&empty=&name=query_name",
         json={"body_key": "body_val", "name": "body_name"},
-        headers={"User-Agent": "test", "x-user-id": "u1"},
+        headers={"x-user-id": "u1"}
     )
     assert res.status_code == 200
     assert captured_payload is not None
-    payload_dict = json.loads(captured_payload)
-    assert payload_dict["tag"] == ["a", "b"]
-    assert payload_dict["empty"] == ""
-    assert payload_dict["name"] == "body_name"
-    assert payload_dict["body_key"] == "body_val"
-    assert set(payload_dict.keys()) == {"tag", "empty", "name", "body_key"}
-
+    data = json.loads(captured_payload)
+    assert data["tag"] == ["a", "b"]
+    assert data["empty"] == ""
+    assert data["name"] == "body_name"
+    assert data["body_key"] == "body_val"
+    assert set(data.keys()) == {"tag", "empty", "name", "body_key"}
 
 def test_flask_payload_raw_body(monkeypatch):
     import json
     app = Flask(__name__)
     guard = Guard()
-
     captured_payload = None
-
-    class FakeGate:
-        passed = True
-        status_code = 200
-        block_reason = ""
 
     async def fake_inspect(ctx, **kwargs):
         nonlocal captured_payload
         captured_payload = ctx.payload
-        return FakeGate(), None
+        return type('Gate', (), {'passed': True, 'status_code': 200, 'block_reason': ''}), None
 
     monkeypatch.setattr(guard, "inspect", fake_inspect)
     guard.use(app, framework="flask")
 
     @app.post("/raw")
-    def raw():
+    def raw_view():
         return jsonify(ok=True)
 
     client = app.test_client()
+    sql_text = "select * from users where id = '' or 1=1"
     res = client.post(
         "/raw",
-        data=b"select * from users where id = '' or 1=1",
+        data=sql_text.encode(),
         content_type="text/plain",
-        headers={"User-Agent": "curl/8.0", "x-user-id": "u1"},
+        headers={"x-user-id": "u1"}
     )
     assert res.status_code == 200
     assert captured_payload is not None
-    payload_dict = json.loads(captured_payload)
-    assert payload_dict["_body"] == "select * from users where id = '' or 1=1"
+    data = json.loads(captured_payload)
+    assert data["_body"] == sql_text

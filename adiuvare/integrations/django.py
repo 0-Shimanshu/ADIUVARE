@@ -35,22 +35,23 @@ class AdiuvareMiddleware:
         if route_cfg.get("exempt"):
             return self._get_response(request)
 
-        get_dict = getattr(request, "GET", {})
-        merged: dict = {}
-        for key in get_dict:
-            values = get_dict.getlist(key)
-            merged[key] = values if len(values) > 1 else values[0]
+        query_params = getattr(request, "GET", {})
+        data = {}
+        for key in query_params:
+            vals = query_params.getlist(key)
+            data[key] = vals[0] if len(vals) == 1 else vals
+
         if body:
             try:
-                body_data = json.loads(body)
-                if isinstance(body_data, dict):
-                    merged.update(body_data)
+                body_payload = json.loads(body)
+                if isinstance(body_payload, dict):
+                    data.update(body_payload)
                 else:
-                    merged["_body"] = body
+                    data["_body"] = body
             except (json.JSONDecodeError, ValueError):
-                merged["_body"] = body
-        payload = json.dumps(merged) if merged else None
+                data["_body"] = body
 
+        payload = json.dumps(data) if data else None
         ctx = build_http_ctx(
             identity=identity,
             payload=payload,
