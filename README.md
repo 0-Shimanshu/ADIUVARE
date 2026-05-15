@@ -312,3 +312,4 @@ semantics. Those are documented plainly in [docs/limitations.md](docs/limitation
 - [FastAPI](docs/integrations/fastapi.md)
 - [Flask](docs/integrations/flask.md)
 - [Django](docs/integrations/django.md)
+Adding maintained tests for adapter payload merging.
