@@ -1,4 +1,5 @@
 include scripts/build_libinjection.py
 include scripts/build_libinjection.sh
+include adiuvare/state/schema.sql
 recursive-include adiuvare/vendor *.dll *.so *.dylib
 recursive-include adiuvare/vendor/libinjection_src *

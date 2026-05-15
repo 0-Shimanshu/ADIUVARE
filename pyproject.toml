@@ -49,6 +49,7 @@ include-package-data = true
 
 [tool.setuptools.package-data]
 adiuvare = [
+  "state/schema.sql",
   "vendor/*.dll",
   "vendor/*.so",
   "vendor/*.dylib",
