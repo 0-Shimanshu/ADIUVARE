@@ -144,7 +144,7 @@ def test_flask_payload_merging(monkeypatch):
     app = Flask(__name__)
     guard = Guard()
 
-    captured_payload = None
+    captured = None
 
     class FakeGate:
         passed = True
@@ -152,8 +152,8 @@ def test_flask_payload_merging(monkeypatch):
         block_reason = ""
 
     async def fake_inspect(ctx, **kwargs):
-        nonlocal captured_payload
-        captured_payload = ctx.payload
+        nonlocal captured
+        captured = ctx.payload
         return FakeGate(), None
 
     monkeypatch.setattr(guard, "inspect", fake_inspect)
@@ -170,13 +170,13 @@ def test_flask_payload_merging(monkeypatch):
         headers={"User-Agent": "test", "x-user-id": "u1"},
     )
     assert res.status_code == 200
-    assert captured_payload is not None
-    payload_dict = json.loads(captured_payload)
-    assert payload_dict["tag"] == ["a", "b"]
-    assert payload_dict["empty"] == ""
-    assert payload_dict["name"] == "body_name"
-    assert payload_dict["body_key"] == "body_val"
-    assert set(payload_dict.keys()) == {"tag", "empty", "name", "body_key"}
+    assert captured is not None
+    data = json.loads(captured)
+    assert data["tag"] == ["a", "b"]
+    assert data["empty"] == ""
+    assert data["name"] == "body_name"
+    assert data["body_key"] == "body_val"
+    assert set(data.keys()) == {"tag", "empty", "name", "body_key"}
 
 
 def test_flask_payload_raw_body(monkeypatch):
@@ -184,7 +184,7 @@ def test_flask_payload_raw_body(monkeypatch):
     app = Flask(__name__)
     guard = Guard()
 
-    captured_payload = None
+    intercepted = None
 
     class FakeGate:
         passed = True
@@ -192,8 +192,8 @@ def test_flask_payload_raw_body(monkeypatch):
         block_reason = ""
 
     async def fake_inspect(ctx, **kwargs):
-        nonlocal captured_payload
-        captured_payload = ctx.payload
+        nonlocal intercepted
+        intercepted = ctx.payload
         return FakeGate(), None
 
     monkeypatch.setattr(guard, "inspect", fake_inspect)
@@ -211,6 +211,6 @@ def test_flask_payload_raw_body(monkeypatch):
         headers={"User-Agent": "curl/8.0", "x-user-id": "u1"},
     )
     assert res.status_code == 200
-    assert captured_payload is not None
-    payload_dict = json.loads(captured_payload)
-    assert payload_dict["_body"] == "select * from users where id = '' or 1=1"
+    assert intercepted is not None
+    raw_data = json.loads(intercepted)
+    assert raw_data["_body"] == "select * from users where id = '' or 1=1"
