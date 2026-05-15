@@ -212,3 +212,83 @@ def test_payload_keeps_union_phrase_clean():
 
     res = asyncio.run(PayloadSignal().extract(ctx))
     assert res.score == 0.0
+
+
+def test_payload_marks_drop_table_text():
+    # drop_table pattern (0.95) — DDL injection
+    ctx = RequestContext(
+        identity="u1",
+        payload="DROP TABLE users",
+        url="/admin",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/admin",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.9
+
+
+def test_payload_marks_union_select_injection_text():
+    # union_select pattern (0.92) — classic UNION-based exfiltration probe
+    ctx = RequestContext(
+        identity="u1",
+        payload="' UNION SELECT null,null--",
+        url="/search",
+        method="GET",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/search",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.9
+
+
+def test_payload_marks_time_delay_sqli_text():
+    # time_waitfor pattern (0.88) — blind time-delay SQLi probe
+    ctx = RequestContext(
+        identity="u1",
+        payload="'; WAITFOR DELAY '0:0:5'--",
+        url="/login",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/login",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.8
+
+
+def test_payload_keeps_plain_hello_clean():
+    # single common word — must not trigger any detection
+    ctx = RequestContext(
+        identity="u1",
+        payload="hello",
+        url="/greet",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/greet",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score == 0.0
+
+
+def test_payload_keeps_search_query_clean():
+    # URL-encoded search term — must not trigger any detection
+    ctx = RequestContext(
+        identity="u1",
+        payload="q=python+tutorial",
+        url="/search",
+        method="GET",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/search",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score == 0.0
