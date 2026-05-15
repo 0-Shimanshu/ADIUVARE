@@ -99,34 +99,17 @@ implementation details behind the supported operator surface.
 
 ## Connected vs disconnected operator experience
 
-### When the stream is connected
+When the stream is reachable, the TUI receives live event rows, runtime
+snapshots, and command acknowledgements over the socket. When it is not
+reachable, the TUI falls back to local cache and audit data.
 
-The TUI header shows `connected` in green and the footer shows
-`live link active`. Runtime-backed screens refresh from live data every 3
-seconds. State-changing actions are sent to the runtime immediately.
+If the socket drops mid-session, the footer shows `stream link dropped`. The
+TUI does not exit or reconnect automatically. Restart `adv` to re-establish
+the stream.
 
-### When the stream is not reachable
-
-The TUI header shows `offline` in orange. All seven screens remain open but
-read from local cache and the audit database instead of the live runtime. Data
-shown may be stale.
-
-State-changing actions taken while offline only write a local audit record.
-They do not change runtime state. No ban, block, or monitor takes effect until
-a connected session sends the command to a live runtime.
-
-### When the stream drops mid-session
-
-If the socket becomes unreachable after the TUI has already started, the
-footer shows `stream link dropped`. The TUI continues running with the last
-cached data. It does not exit or reconnect automatically. Restart `adv` to
-re-establish the stream.
-
-### How the UI signals unavailable actions
-
-The TUI does not currently dim or disable individual action buttons based on
-connection state. The header persistently shows `connected` or `offline`.
-Operators should check the header before taking any state-changing action.
+For the full operator-facing explanation of which screens work offline, which
+actions require a live runtime, and how the UI signals connection state, see
+[TUI](tui.md).
 
 ## Connected status example
 

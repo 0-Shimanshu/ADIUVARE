@@ -57,54 +57,18 @@ One important consequence today:
 - a disconnected TUI can still show cached data and control-plane history, but
   that is not the same thing as mutating live runtime state
 
-### Connected vs disconnected mode
+The header bar shows `connected` or `offline` at all times. All seven screens
+remain open when disconnected, but state-changing actions taken offline only
+write a local audit record and do not change runtime state. The TUI is
+strongest when attached to a running runtime.
 
-When the TUI starts, it looks for a live runtime socket. The header bar shows
-the result at all times:
-
-- `connected` in green means the runtime is reachable
-- `offline` in orange means no socket was found or the runtime is unreachable
-
-### Which views still work offline
-
-All seven screens remain open and navigable when disconnected:
-
-- Monitor, Events, Signals read from the local audit cache. Data may be stale.
-- Audit and Changes always read from the local audit database.
-- Config always reads and writes `adiuvare.yaml` on disk.
-- AI falls back to local audit summarisation. Answers may be less detailed.
-
-### Which actions mutate live runtime state
-
-These actions send commands to the running runtime when connected:
-
-- confirm block
-- whitelist identity
-- monitor identity
-- unmonitor identity
-- unblock and monitor
-- ban IP
-- unban IP
-- apply config changes
-
-When disconnected, these actions only write a local audit record. They do not
-change runtime state. No ban, block, or monitor takes effect until a connected
-session sends the command to a live runtime.
-
-### How the UI signals unavailable actions
-
-The TUI does not currently dim or disable individual action buttons based on
-connection state. The header persistently shows `connected` or `offline` so
-operators always know which mode they are in. The footer shows `live link
-active` when the stream is healthy and `stream link dropped` if it disconnects
-mid-session. Operators should check the header before taking any
-state-changing action.
+For the full breakdown of which screens work offline, which actions require a
+live runtime, and how the UI signals connection state, see
+[TUI](operator/tui.md).
 
 This is an area to tighten further. The long-term goal is to make the offline
 story more explicit, either by disabling actions that cannot be applied for
 real or by giving local single-instance mode a true local mutation path.
-
-That means the TUI is strongest when attached to a running runtime.
 
 ## The TUI is still a bounded operator console
 
