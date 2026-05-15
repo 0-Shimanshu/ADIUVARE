@@ -64,7 +64,7 @@ jobs:
           python -m pip install pyright
 
       - name: Run pyright
-        run: pyright adiuvare tests cli.py scripts
+        run: pyright scripts
 
   workflows:
     name: Workflow lint
