@@ -265,3 +265,69 @@ def test_fastapi_route_ai_mode_override_is_used():
         headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u9"},
     )
     assert res.status_code == 403
+
+
+def test_fastapi_payload_merging(monkeypatch):
+    import json
+    app = FastAPI()
+    guard = Guard()
+
+    captured_payload = None
+
+    async def fake_trackB(ctx):
+        nonlocal captured_payload
+        captured_payload = ctx.payload
+        return None
+
+    monkeypatch.setattr(guard._pipeline, "trackB", fake_trackB)
+    guard.use(app, framework="fastapi")
+
+    @app.post("/merge")
+    async def merge():
+        return {"ok": True}
+
+    client = TestClient(app)
+    res = client.post(
+        "/merge?tag=a&tag=b&empty=&name=query_name",
+        json={"body_key": "body_val", "name": "body_name"},
+        headers={"User-Agent": "test", "x-user-id": "u1"},
+    )
+    assert res.status_code == 200
+    assert captured_payload is not None
+    payload_dict = json.loads(captured_payload)
+    assert payload_dict["tag"] == ["a", "b"]
+    assert payload_dict["empty"] == ""
+    assert payload_dict["name"] == "body_name"
+    assert payload_dict["body_key"] == "body_val"
+    assert set(payload_dict.keys()) == {"tag", "empty", "name", "body_key"}
+
+
+def test_fastapi_payload_raw_body(monkeypatch):
+    import json
+    app = FastAPI()
+    guard = Guard()
+
+    captured_payload = None
+
+    async def fake_trackB(ctx):
+        nonlocal captured_payload
+        captured_payload = ctx.payload
+        return None
+
+    monkeypatch.setattr(guard._pipeline, "trackB", fake_trackB)
+    guard.use(app, framework="fastapi")
+
+    @app.post("/raw")
+    async def raw():
+        return {"ok": True}
+
+    client = TestClient(app)
+    res = client.post(
+        "/raw",
+        content="select * from users where id = '' or 1=1",
+        headers={"User-Agent": "curl/8.0", "x-user-id": "u1", "content-type": "text/plain"},
+    )
+    assert res.status_code == 200
+    assert captured_payload is not None
+    payload_dict = json.loads(captured_payload)
+    assert payload_dict["_body"] == "select * from users where id = '' or 1=1"

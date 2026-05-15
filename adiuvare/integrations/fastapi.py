@@ -1,4 +1,5 @@
 import asyncio
+import json
 import threading
 
 from fastapi import Request
@@ -9,7 +10,7 @@ from starlette.types import ASGIApp
 
 from ..core.gate import run_trackA
 from .sqlalchemy import _sink_mode
-from . import build_http_ctx, ctx_payload
+from . import build_http_ctx
 
 
 class AdiuvareMiddleware(BaseHTTPMiddleware):
@@ -20,8 +21,6 @@ class AdiuvareMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         await self._guard.ensure_started()
-        body = await request.body()
-        body_text = body.decode() if body else None
         raw_ip = request.headers.get("x-forwarded-for", "")
         ip = raw_ip.split(",", 1)[0].strip()
         if not ip:
@@ -31,9 +30,33 @@ class AdiuvareMiddleware(BaseHTTPMiddleware):
         if route_cfg.get("exempt"):
             return await call_next(request)
 
+        body_bytes = await request.body()
+        body_text = body_bytes.decode(errors="replace") if body_bytes else None
+
+        merged: dict = {}
+        for key, values in request.query_params.multi_items():
+            if key in merged:
+                existing = merged[key]
+                if isinstance(existing, list):
+                    existing.append(values)
+                else:
+                    merged[key] = [existing, values]
+            else:
+                merged[key] = values
+        if body_text:
+            try:
+                body_data = json.loads(body_text)
+                if isinstance(body_data, dict):
+                    merged.update(body_data)
+                else:
+                    merged["_body"] = body_text
+            except (json.JSONDecodeError, ValueError):
+                merged["_body"] = body_text
+        payload = json.dumps(merged) if merged else None
+
         ctx = build_http_ctx(
             identity=request.headers.get("x-user-id", request.client.host if request.client else "anon"),
-            payload=ctx_payload(body_text, request.url.query),
+            payload=payload,
             url=str(request.url.path),
             method=request.method,
             headers=dict(request.headers),

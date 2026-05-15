@@ -4,7 +4,7 @@ import json
 from werkzeug.wrappers import Request, Response
 
 from .sqlalchemy import _sink_mode
-from . import build_http_ctx, ctx_payload
+from . import build_http_ctx
 
 
 class AdiuvareMiddleware:
@@ -15,16 +15,32 @@ class AdiuvareMiddleware:
 
     def __call__(self, environ, start_response):
         req = Request(environ)
-        body = req.get_data(cache=True, as_text=True)
         raw_ip = req.headers.get("x-forwarded-for", "")
         ip = raw_ip.split(",", 1)[0].strip() or req.remote_addr or "127.0.0.1"
         route_cfg = self._route_cfg(req)
         if route_cfg.get("exempt"):
             return self._app(environ, start_response)
 
+        body_text = req.get_data(as_text=True) or None
+
+        merged: dict = {}
+        for key in req.args:
+            values = req.args.getlist(key)
+            merged[key] = values if len(values) > 1 else values[0]
+        if body_text:
+            try:
+                body_data = json.loads(body_text)
+                if isinstance(body_data, dict):
+                    merged.update(body_data)
+                else:
+                    merged["_body"] = body_text
+            except (json.JSONDecodeError, ValueError):
+                merged["_body"] = body_text
+        payload = json.dumps(merged) if merged else None
+
         ctx = build_http_ctx(
             identity=req.headers.get("x-user-id", req.remote_addr or "anon"),
-            payload=ctx_payload(body or None, req.query_string.decode(errors="replace")),
+            payload=payload,
             url=req.path,
             method=req.method,
             headers=dict(req.headers),
