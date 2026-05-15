@@ -30,29 +30,29 @@ class AdiuvareMiddleware(BaseHTTPMiddleware):
         if route_cfg.get("exempt"):
             return await call_next(request)
 
-        raw_bytes = await request.body()
-        raw_text = raw_bytes.decode(errors="replace") if raw_bytes else None
+        body_bytes = await request.body()
+        body_text = body_bytes.decode(errors="replace") if body_bytes else None
 
-        params: dict = {}
+        merged: dict = {}
         for key, values in request.query_params.multi_items():
-            if key in params:
-                existing = params[key]
+            if key in merged:
+                existing = merged[key]
                 if isinstance(existing, list):
                     existing.append(values)
                 else:
-                    params[key] = [existing, values]
+                    merged[key] = [existing, values]
             else:
-                params[key] = values
-        if raw_text:
+                merged[key] = values
+        if body_text:
             try:
-                parsed = json.loads(raw_text)
-                if isinstance(parsed, dict):
-                    params.update(parsed)
+                body_data = json.loads(body_text)
+                if isinstance(body_data, dict):
+                    merged.update(body_data)
                 else:
-                    params["_body"] = raw_text
+                    merged["_body"] = body_text
             except (json.JSONDecodeError, ValueError):
-                params["_body"] = raw_text
-        payload = json.dumps(params) if params else None
+                merged["_body"] = body_text
+        payload = json.dumps(merged) if merged else None
 
         ctx = build_http_ctx(
             identity=request.headers.get("x-user-id", request.client.host if request.client else "anon"),

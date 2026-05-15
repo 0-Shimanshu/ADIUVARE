@@ -272,11 +272,11 @@ def test_fastapi_payload_merging(monkeypatch):
     app = FastAPI()
     guard = Guard()
 
-    seen_payload = None
+    captured_payload = None
 
     async def fake_trackB(ctx):
-        nonlocal seen_payload
-        seen_payload = ctx.payload
+        nonlocal captured_payload
+        captured_payload = ctx.payload
         return None
 
     monkeypatch.setattr(guard._pipeline, "trackB", fake_trackB)
@@ -293,13 +293,13 @@ def test_fastapi_payload_merging(monkeypatch):
         headers={"User-Agent": "test", "x-user-id": "u1"},
     )
     assert res.status_code == 200
-    assert seen_payload is not None
-    result = json.loads(seen_payload)
-    assert result["tag"] == ["a", "b"]
-    assert result["empty"] == ""
-    assert result["name"] == "body_name"
-    assert result["body_key"] == "body_val"
-    assert set(result.keys()) == {"tag", "empty", "name", "body_key"}
+    assert captured_payload is not None
+    payload_dict = json.loads(captured_payload)
+    assert payload_dict["tag"] == ["a", "b"]
+    assert payload_dict["empty"] == ""
+    assert payload_dict["name"] == "body_name"
+    assert payload_dict["body_key"] == "body_val"
+    assert set(payload_dict.keys()) == {"tag", "empty", "name", "body_key"}
 
 
 def test_fastapi_payload_raw_body(monkeypatch):
@@ -307,11 +307,11 @@ def test_fastapi_payload_raw_body(monkeypatch):
     app = FastAPI()
     guard = Guard()
 
-    captured = None
+    captured_payload = None
 
     async def fake_trackB(ctx):
-        nonlocal captured
-        captured = ctx.payload
+        nonlocal captured_payload
+        captured_payload = ctx.payload
         return None
 
     monkeypatch.setattr(guard._pipeline, "trackB", fake_trackB)
@@ -328,6 +328,6 @@ def test_fastapi_payload_raw_body(monkeypatch):
         headers={"User-Agent": "curl/8.0", "x-user-id": "u1", "content-type": "text/plain"},
     )
     assert res.status_code == 200
-    assert captured is not None
-    raw_result = json.loads(captured)
-    assert raw_result["_body"] == "select * from users where id = '' or 1=1"
+    assert captured_payload is not None
+    payload_dict = json.loads(captured_payload)
+    assert payload_dict["_body"] == "select * from users where id = '' or 1=1"

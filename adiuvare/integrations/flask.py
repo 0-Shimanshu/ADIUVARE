@@ -23,21 +23,20 @@ class AdiuvareMiddleware:
 
         body_text = req.get_data(as_text=True) or None
 
-        final_payload: dict = {}
+        merged: dict = {}
         for key in req.args:
             values = req.args.getlist(key)
-            val = values if len(values) > 1 else values[0]
-            final_payload[key] = val
+            merged[key] = values if len(values) > 1 else values[0]
         if body_text:
             try:
-                json_body = json.loads(body_text)
-                if isinstance(json_body, dict):
-                    final_payload.update(json_body)
+                body_data = json.loads(body_text)
+                if isinstance(body_data, dict):
+                    merged.update(body_data)
                 else:
-                    final_payload["_body"] = body_text
+                    merged["_body"] = body_text
             except (json.JSONDecodeError, ValueError):
-                final_payload["_body"] = body_text
-        payload = json.dumps(final_payload) if final_payload else None
+                merged["_body"] = body_text
+        payload = json.dumps(merged) if merged else None
 
         ctx = build_http_ctx(
             identity=req.headers.get("x-user-id", req.remote_addr or "anon"),

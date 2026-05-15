@@ -36,21 +36,20 @@ class AdiuvareMiddleware:
             return self._get_response(request)
 
         get_dict = getattr(request, "GET", {})
-        request_params: dict = {}
+        merged: dict = {}
         for key in get_dict:
             values = get_dict.getlist(key)
-            multi = values if len(values) > 1 else values[0]
-            request_params[key] = multi
+            merged[key] = values if len(values) > 1 else values[0]
         if body:
             try:
-                body_json = json.loads(body)
-                if isinstance(body_json, dict):
-                    request_params.update(body_json)
+                body_data = json.loads(body)
+                if isinstance(body_data, dict):
+                    merged.update(body_data)
                 else:
-                    request_params["_body"] = body
+                    merged["_body"] = body
             except (json.JSONDecodeError, ValueError):
-                request_params["_body"] = body
-        payload = json.dumps(request_params) if request_params else None
+                merged["_body"] = body
+        payload = json.dumps(merged) if merged else None
 
         ctx = build_http_ctx(
             identity=identity,
