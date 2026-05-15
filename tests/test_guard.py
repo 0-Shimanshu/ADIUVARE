@@ -92,3 +92,12 @@ def test_guard_check_sync_returns_event():
     gate, event = guard.check_sync("u2", payload="hello")
     assert gate.passed is True
     assert event is not None
+
+
+def test_guard_check_detects_shell_probe_via_pipe():
+    # confirms the new | / || / backtick patterns flow through the full guard stack
+    guard = Guard()
+    gate, event = guard.check_sync("u3", payload="search | bash")
+    assert gate.passed is True
+    assert event is not None
+    assert event.score > 0.0
