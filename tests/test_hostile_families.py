@@ -113,7 +113,7 @@ def test_guard_passes_normal_search_query():
     )
     assert gate.passed is True
     assert event is not None
-    assert event.breakdown["payload"] == "payload_clean"
+    assert event.breakdown["payload"] == 0.0
 
 
 def test_guard_passes_normal_json_payload():
@@ -124,7 +124,7 @@ def test_guard_passes_normal_json_payload():
     )
     assert gate.passed is True
     assert event is not None
-    assert event.breakdown["payload"] == "payload_clean"
+    assert event.breakdown["payload"] == 0.0
 
 
 def test_guard_passes_plain_template_mention():
@@ -135,4 +135,4 @@ def test_guard_passes_plain_template_mention():
     )
     assert gate.passed is True
     assert event is not None
-    assert event.breakdown["payload"] == "payload_clean"
+    assert event.breakdown["payload"] == 0.0
