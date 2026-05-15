@@ -65,7 +65,8 @@ class AIScreen(WorkspaceView):
                 with Horizontal(id="ai-ask-header-row"):
                     yield Static(
                         f"[{PALETTE['purple']} bold]OPERATOR ASSISTANT[/]  "
-                        f"[{PALETTE['dim']}]Bounded analysis . answers from runtime AI or local data[/]",
+                        f"[{PALETTE['dim']}]Runtime link, model config, "
+                        "and local fallback shown separately[/]",
                         id="ai-chat-header",
                     )
                     yield Static("", id="ai-ask-status")
@@ -245,12 +246,13 @@ class AIScreen(WorkspaceView):
     def _render_ask_status(self) -> None:
         snap = self._app().runtime_snapshot()
         connected = bool(snap.get("connected", False))
-        model = str(self._app().config.ai.model)
+        model = str(snap.get("ai_model") or self._app().config.ai.model)
         conn_color = PALETTE["green"] if connected else PALETTE["orange"]
-        conn_text = "yes" if connected else "no"
+        conn_text = "connected" if connected else "disconnected"
         self.query_one("#ai-ask-status", Static).update(
-            f"[{PALETTE['dim']}]AI connected:[/] [{conn_color}]{conn_text}[/]  "
+            f"[{PALETTE['dim']}]runtime:[/] [{conn_color}]{conn_text}[/]  "
             f"[{PALETTE['dim']}]model:[/] [{PALETTE['cyan']}]{model}[/]  "
+            f"[{PALETTE['dim']}]model reach:[/] [{PALETTE['orange']}]not checked[/]  "
             f"[{PALETTE['dim']}]fallback:[/] [{PALETTE['green']}]available[/]"
         )
 
@@ -281,8 +283,8 @@ class AIScreen(WorkspaceView):
                 f"\n  [{PALETTE['dim']}]Welcome to the Operator Assistant.[/]\n\n"
                 f"  [{PALETTE['very_dim']}]Ask questions about your security posture, threat patterns,[/]\n"
                 f"  [{PALETTE['very_dim']}]identity behavior, or configuration recommendations.[/]\n\n"
-                f"  [{PALETTE['dim']}]Answers come from the runtime AI when connected,[/]\n"
-                f"  [{PALETTE['dim']}]or from local data analysis as fallback.[/]\n"
+                f"  [{PALETTE['dim']}]Runtime connection is shown separately from model reachability.[/]\n"
+                f"  [{PALETTE['dim']}]Answers use runtime AI when it responds, otherwise local fallback.[/]\n"
             )
             return
 

@@ -197,9 +197,14 @@ It is meant for questions like:
 
 The header shows:
 
-- whether AI is connected
+- whether the TUI is connected to the runtime
 - which model is configured
+- that model reachability is not checked by this header
 - whether local fallback is available
+
+Runtime connection only means the operator console can reach the Adiuvare
+runtime snapshot/command surface. It does not prove that the configured model
+endpoint is reachable.
 
 ![AI Ask screen](../assets/tui/ai-ask.png)
 

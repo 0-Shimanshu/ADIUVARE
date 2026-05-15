@@ -159,9 +159,14 @@ Ask is the bounded operator assistant. It is meant for questions like:
 
 The Ask header shows:
 
-- whether AI is connected
+- whether the TUI is connected to the runtime
 - which model is configured
+- that model reachability is not checked by this header
 - whether local fallback is available
+
+Runtime connection means the operator console can reach the Adiuvare runtime
+snapshot/command surface. It should not be read as proof that the configured
+model endpoint is reachable.
 
 ## Good rollout shape
 
