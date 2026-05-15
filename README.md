@@ -312,3 +312,5 @@ semantics. Those are documented plainly in [docs/limitations.md](docs/limitation
 - [FastAPI](docs/integrations/fastapi.md)
 - [Flask](docs/integrations/flask.md)
 - [Django](docs/integrations/django.md)
+Clarifying offline vs connected TUI behavior.
+General documentation improvement.
