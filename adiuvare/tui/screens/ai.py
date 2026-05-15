@@ -291,6 +291,7 @@ class AIScreen(WorkspaceView):
         lines: list[str] = []
         for role, message, source in self._chat_history[-12:]:
             if role == "user":
+                lines.append("")
                 lines.append(f"  [{PALETTE['cyan']} bold]You >[/]  [{PALETTE['text']}]{message}[/]")
                 lines.append("")
                 continue
