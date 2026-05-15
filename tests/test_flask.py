@@ -120,7 +120,6 @@ def test_flask_body_sqli_does_not_stay_open():
 
 
 def test_flask_drop_table_body_is_blocked():
-    # DDL injection in body (drop_table pattern, 0.95) → payload_risk >= 0.85 → 429
     app = Flask(__name__)
     guard = Guard()
     guard.use(app, framework="flask")
@@ -140,7 +139,6 @@ def test_flask_drop_table_body_is_blocked():
 
 
 def test_flask_clean_post_body_is_allowed():
-    # Benign form body must not trigger any detection
     app = Flask(__name__)
     guard = Guard()
     guard.use(app, framework="flask")

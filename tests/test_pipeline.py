@@ -114,7 +114,6 @@ def test_pipeline_repeats_pick_up_identity_state():
 
 
 def test_pipeline_clean_payload_produces_allow_verdict():
-    # Benign payload + normal browser UA → no signals fire → allow
     ctx = RequestContext(
         identity="u1",
         payload="hello world",
@@ -132,7 +131,6 @@ def test_pipeline_clean_payload_produces_allow_verdict():
 
 
 def test_pipeline_high_confidence_sqli_produces_non_allow_verdict():
-    # DROP TABLE hits the 0.95 drop_table pattern → payload_risk >= 0.85 → at least throttle
     ctx = RequestContext(
         identity="u1",
         payload="DROP TABLE users",

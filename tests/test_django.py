@@ -68,7 +68,6 @@ def test_django_body_sqli_does_not_stay_open():
 
 
 def test_django_drop_table_body_is_blocked():
-    # DDL injection in body (drop_table pattern, 0.95) → payload_risk >= 0.85 → 429
     guard = Guard()
     mw = AdiuvareMiddleware(lambda req: DummyRes(200), guard)
     req = DummyReq(
@@ -82,7 +81,6 @@ def test_django_drop_table_body_is_blocked():
 
 
 def test_django_clean_post_body_is_allowed():
-    # Benign form body must not trigger any detection
     guard = Guard()
     mw = AdiuvareMiddleware(lambda req: DummyRes(200), guard)
     req = DummyReq(

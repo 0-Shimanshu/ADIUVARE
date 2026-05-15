@@ -101,7 +101,6 @@ def test_gate_blocks_banned_ip():
 
 
 def test_gate_blocks_decoy_prefix_path():
-    # /_decoy/* endpoints are treated as honeypots; any hit is an immediate 403
     ctx = make_ctx()
     ctx.endpoint = "/_decoy/trap"
     res = run_trackA(ctx, IdentityStore())
@@ -111,7 +110,6 @@ def test_gate_blocks_decoy_prefix_path():
 
 
 def test_gate_allows_clean_post_to_regular_endpoint():
-    # POST to a non-admin, non-decoy path with a fresh identity must pass
     ctx = make_ctx()
     ctx.method = "POST"
     ctx.endpoint = "/api/data"
@@ -120,7 +118,6 @@ def test_gate_allows_clean_post_to_regular_endpoint():
 
 
 def test_gate_tracks_rate_limit_independently_per_identity():
-    # Exhausting u1's rate limit must not affect u2
     store = IdentityStore()
     ctx_u1 = make_ctx("u1")
     for _ in range(201):

@@ -239,7 +239,6 @@ def test_guard_auto_attaches_fastapi():
 
 
 def test_fastapi_drop_table_body_is_blocked():
-    # DDL injection in body (drop_table pattern, 0.95) → payload_risk >= 0.85 → 429
     app = FastAPI()
     guard = Guard()
     guard.use(app, framework="fastapi")
@@ -258,7 +257,6 @@ def test_fastapi_drop_table_body_is_blocked():
 
 
 def test_fastapi_clean_post_body_is_allowed():
-    # Benign form body must not trigger any detection
     app = FastAPI()
     guard = Guard()
     guard.use(app, framework="fastapi")
