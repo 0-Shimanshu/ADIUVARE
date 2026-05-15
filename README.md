@@ -119,7 +119,7 @@ audit_db: .adiuvare/audit.db
 ```
 
 If you are evaluating the source tree without installing it yet, you can still
-run `python cli.py status` or `python cli.py init --no-tui` from the repository
+run `python -m adiuvare.cli status` or `python -m adiuvare.cli init --no-tui` from the repository
 root.
 
 More detail: [docs/installation.md](docs/installation.md)

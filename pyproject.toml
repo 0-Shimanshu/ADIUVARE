@@ -32,7 +32,7 @@ redis = [
 ]
 
 [project.scripts]
-adv = "cli:main"
+adv = "adiuvare.cli:main"
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]
