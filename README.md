@@ -312,3 +312,4 @@ semantics. Those are documented plainly in [docs/limitations.md](docs/limitation
 - [FastAPI](docs/integrations/fastapi.md)
 - [Flask](docs/integrations/flask.md)
 - [Django](docs/integrations/django.md)
+Updating TUI footer help text for better consistency.
