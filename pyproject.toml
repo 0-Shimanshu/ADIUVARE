@@ -47,8 +47,12 @@ per-file-ignores = { "adiuvare/**/__init__.py" = ["F401"] }
 [tool.setuptools]
 include-package-data = true
 
+[tool.setuptools.packages.find]
+include = ["adiuvare*"]
+
 [tool.setuptools.package-data]
 adiuvare = [
+  "state/schema.sql",
   "vendor/*.dll",
   "vendor/*.so",
   "vendor/*.dylib",
