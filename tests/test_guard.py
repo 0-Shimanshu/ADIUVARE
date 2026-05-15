@@ -95,7 +95,6 @@ def test_guard_check_sync_returns_event():
 
 
 def test_guard_check_detects_shell_probe_via_pipe():
-    # confirms the new | / || / backtick patterns flow through the full guard stack
     guard = Guard()
     gate, event = guard.check_sync("u3", payload="search | bash")
     assert gate.passed is True
