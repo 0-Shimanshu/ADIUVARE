@@ -42,7 +42,7 @@ DECISION_ICONS = {
 DECISION_COLORS = {
     "allow": PALETTE["green"],
     "flag": PALETTE["orange"],
-    "throttle": PALETTE["orange"],
+    "throttle": PALETTE["purple"],
     "block": PALETTE["red"],
 }
 
@@ -100,6 +100,16 @@ def decision_color(verdict: str) -> str:
 
 def decision_icon(verdict: str) -> str:
     return DECISION_ICONS.get(verdict, "?")
+def decision_label(verdict: str) -> str:
+    return verdict.upper()
+
+
+def render_decision_badge(verdict: str) -> str:
+    color = decision_color(verdict)
+    icon = decision_icon(verdict)
+    label = decision_label(verdict)
+
+    return f"[{color}]{icon} {label}[/]"
 
 
 def risk_color(risk: str) -> str:
