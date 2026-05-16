@@ -13,6 +13,7 @@ from ..workspace import (
     render_decision_bar,
     render_signal_bar,
     styled_separator,
+    render_decision_badge,
 )
 
 if TYPE_CHECKING:
@@ -182,10 +183,10 @@ class AIScreen(WorkspaceView):
             f"[{PALETTE['very_dim']}]EVENTS[/]\n[{PALETTE['white']} bold]{total}[/]"
         )
         self.query_one("#ai-kpi-blocked", Static).update(
-            f"[{PALETTE['very_dim']}]BLOCKED[/]\n[{PALETTE['red']} bold]{blocked}[/]"
+            f"[{PALETTE['very_dim']}]BLOCK[/]\n[{PALETTE['red']} bold]{blocked}[/]"
         )
         self.query_one("#ai-kpi-flagged", Static).update(
-            f"[{PALETTE['very_dim']}]FLAGGED[/]\n[{PALETTE['orange']} bold]{flagged}[/]"
+            f"[{PALETTE['very_dim']}]FLAG[/]\n[{PALETTE['orange']} bold]{flagged}[/]"
         )
         self.query_one("#ai-kpi-blockrate", Static).update(
             f"[{PALETTE['very_dim']}]BLOCK RATE[/]\n[{PALETTE['cyan']} bold]{block_rate:.1f}%[/]"
@@ -200,7 +201,7 @@ class AIScreen(WorkspaceView):
             icon = decision_icon(decision)
             bar = render_decision_bar(count, max_count, color, 20)
             decision_lines.append(
-                f"  [{color}]{icon} {decision:<8}[/] {bar} [{PALETTE['cyan']}]{count:>3}[/] [{PALETTE['very_dim']}]{pct:>5.1f}%[/]"
+                f"  {render_decision_badge(decision):<28} {bar} [{PALETTE['cyan']}]{count:>3}[/] [{PALETTE['very_dim']}]{pct:>5.1f}%[/]"
             )
         self.query_one("#ai-chart-decisions", Static).update("\n".join(decision_lines))
 
