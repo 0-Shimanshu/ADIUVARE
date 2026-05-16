@@ -18,6 +18,7 @@ from ..workspace import (
     render_signal_bar,
     styled_label,
     styled_separator,
+    render_decision_badge,
 )
 
 if TYPE_CHECKING:
@@ -153,7 +154,7 @@ class AuditScreen(WorkspaceView):
 
             table.add_row(
                 Text(age, style=PALETTE["dim"]),
-                Text(f" {icon} {verdict.upper():<9}", style=f"{color} bold"),
+                Text(render_decision_badge(verdict), style="bold"),
                 Text(f"{score:.4f}", style=PALETTE["cyan"]),
                 Text(identity, style=PALETTE["text"]),
                 Text(endpoint, style=PALETTE["dim"]),
@@ -243,7 +244,7 @@ class AuditScreen(WorkspaceView):
             styled_label("Endpoint", f"[{PALETTE['dim']}]{event.get('endpoint', '?')}[/]"),
             styled_label("IP", str(event.get("ip", "-") or "-")),
             f"[{PALETTE['dim']}]Score         [/] {render_score_bar(score)} [{PALETTE['cyan']}]{score:.4f}[/]",
-            styled_label("Verdict", f"[{verdict_color}]{decision_icon(verdict)} {verdict.upper()}[/]"),
+            styled_label("Verdict", render_decision_badge(verdict)),
             styled_label("Mode", str(event.get("mode", "enforce"))),
             styled_label("Dominant", f"[{PALETTE['cyan']}]{event.get('dominant', '-')}[/]"),
         ]
