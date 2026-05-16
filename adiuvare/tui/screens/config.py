@@ -18,7 +18,7 @@ STRICTNESS_OPTIONS = [("public", "public"), ("internal", "internal"), ("critical
 
 
 class ConfigScreen(WorkspaceView):
-    shortcut_hints = "[1-7] tabs  [s] save  [t] toggle observe  [Tab] next field"
+   shortcut_hints = "[1-7] tabs  [s] save  [t] toggle observe  [tab] next field"
     primary_id = "cfg-mode-display"
 
     BINDINGS = [

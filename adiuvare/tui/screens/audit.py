@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 
 class AuditScreen(WorkspaceView):
-    shortcut_hints = "[1-7] tabs  [f] filter  [e] export JSONL  [up/down] navigate"
+   shortcut_hints = "[1-7] tabs  [f] filter  [e] export  [up/down] navigate"
     primary_id = "audit-table"
     search_id = "audit-identity-filter"
 
