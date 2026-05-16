@@ -67,6 +67,32 @@ def test_django_body_sqli_does_not_stay_open():
     assert res.status_code in {403, 429}
 
 
+def test_django_drop_table_body_is_blocked():
+    guard = Guard()
+    mw = AdiuvareMiddleware(lambda req: DummyRes(200), guard)
+    req = DummyReq(
+        "/billing",
+        method="POST",
+        body=b"DROP TABLE users",
+        headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u90"},
+    )
+    res = mw(req)
+    assert res.status_code in {403, 429}
+
+
+def test_django_clean_post_body_is_allowed():
+    guard = Guard()
+    mw = AdiuvareMiddleware(lambda req: DummyRes(200), guard)
+    req = DummyReq(
+        "/submit",
+        method="POST",
+        body=b"name=Alice&message=hello+world",
+        headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u91"},
+    )
+    res = mw(req)
+    assert res.status_code == 200
+
+
 def test_django_route_cfg_can_skip_trackB():
     guard = Guard()
     guard.configure_routes({"/billing": {"trackB": False}})

@@ -30,6 +30,52 @@ When disconnected, it falls back to:
 The TUI is still useful offline. It is just strongest when attached to a
 running runtime.
 
+### How the UI signals connection state
+
+The header bar shows the current connection state at all times:
+
+- `connected` in green means a live runtime socket is reachable
+- `offline` in orange means no socket was found or the runtime is unreachable
+
+The footer shows `live link active` when the stream is healthy. If the stream
+drops mid-session, the footer shows `stream link dropped`. The TUI does not
+exit or reconnect automatically in that case.
+
+### How the UI signals unavailable actions
+
+The TUI does not currently dim or disable individual action buttons based on
+connection state. The header persistently shows `connected` or `offline` so
+operators always know which mode they are in. Operators should check the
+header before taking any state-changing action. Any action taken while the
+header shows `offline` only writes a local audit record and does not change
+runtime state.
+
+### Which views still work offline
+
+All seven screens remain open and navigable when disconnected:
+
+- Monitor, Events, Signals read from the local audit cache. Data may be stale.
+- Audit and Changes always read from the local audit database.
+- Config always reads and writes `adiuvare.yaml` on disk.
+- AI falls back to local audit summarisation. Answers may be less detailed.
+
+### Which actions mutate live runtime state
+
+These actions send commands to the running runtime when connected:
+
+- confirm block
+- whitelist identity
+- monitor identity
+- unmonitor identity
+- unblock and monitor
+- ban IP
+- unban IP
+- apply config changes
+
+When disconnected, these actions only write a local audit record. They do not
+change runtime state. No ban, block, or monitor takes effect until a connected
+session sends the command to a live runtime.
+
 ## Navigation
 
 The current TUI has seven screens:

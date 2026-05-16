@@ -119,7 +119,7 @@ audit_db: .adiuvare/audit.db
 ```
 
 If you are evaluating the source tree without installing it yet, you can still
-run `python cli.py status` or `python cli.py init --no-tui` from the repository
+run `python -m adiuvare.cli status` or `python -m adiuvare.cli init --no-tui` from the repository
 root.
 
 More detail: [docs/installation.md](docs/installation.md)
@@ -300,6 +300,15 @@ Adiuvare is in a good place for:
 
 There are still edges around distributed shared state and disconnected TUI
 semantics. Those are documented plainly in [docs/limitations.md](docs/limitations.md).
+
+## Payload coverage
+
+Payload scoring is currently strongest on common SQLi, XSS, and path traversal patterns along with nearby normalization variants.
+
+Known detection boundaries and false-positive cases are documented in:
+
+- docs/signals.md
+- docs/limitations.md
 
 ## Docs
 

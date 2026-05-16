@@ -9,5 +9,5 @@ build:
 	$(PYTHON) -m build
 
 tui:
-	$(PYTHON) cli.py
+	$(PYTHON) -m adiuvare.cli
 
