@@ -61,6 +61,14 @@ This is an area to tighten further. The long-term goal is to make the offline
 story more explicit, either by disabling actions that cannot be applied for
 real or by giving local single-instance mode a true local mutation path.
 
+Today the Events and Audit screens make that distinction easier to see:
+
+- disabled operator buttons use a dimmed dashed style instead of looking like
+  normal actions
+- the action bar explains disconnected mode and why specific actions are
+  unavailable for the selected row
+- button tooltips repeat the unavailable reason on hover
+
 That means the TUI is strongest when attached to a running runtime.
 
 ## The TUI is still a bounded operator console

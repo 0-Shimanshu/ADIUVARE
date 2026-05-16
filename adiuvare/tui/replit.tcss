@@ -203,11 +203,17 @@ Button.save {
     text-style: bold;
 }
 
-Button:disabled {
-    background: #161b22;
-    border: solid #21262d;
-    color: #30363d;
-    opacity: 0.5;
+Button:disabled,
+Button.action-unavailable {
+    background: #10151c;
+    border: dashed #3d444d;
+    color: #6e7681;
+    opacity: 0.72;
+    text-style: dim;
+}
+
+Button.action-unavailable {
+    color: #8b949e;
 }
 
 /* ── Select Fields ── */
@@ -350,10 +356,11 @@ Scrollbar {
 }
 
 #events-action-status {
-    width: auto;
+    width: 1fr;
+    min-width: 24;
     margin-left: 2;
     color: #8b949e;
-    content-align: center middle;
+    content-align: left middle;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -763,6 +770,14 @@ Scrollbar {
 #audit-action-bar Button {
     margin-right: 1;
     min-width: 10;
+}
+
+#audit-action-status {
+    width: 1fr;
+    min-width: 24;
+    margin-left: 2;
+    color: #8b949e;
+    content-align: left middle;
 }
 
 #changes-outer {

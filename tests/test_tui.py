@@ -263,6 +263,60 @@ async def test_events_filter_reduces_rows(app):
 
 
 @pytest.mark.asyncio
+async def test_events_disabled_actions_show_reasons(app):
+    app.audit.write(
+        AdiuvareEvent(
+            identity="user:blocked",
+            endpoint="POST /review",
+            score=0.91,
+            verdict="block",
+            breakdown={"payload": 0.91},
+            detail={"ip": "203.0.113.4"},
+        )
+    )
+    async with app.run_test() as pilot:
+        await pilot.press("2")
+        await pilot.pause()
+
+        confirm = app.query_one("#events-confirm", Button)
+        unblock = app.query_one("#events-unblock-monitor", Button)
+        status = app.query_one("#events-action-status", Static)
+
+        assert confirm.disabled is True
+        assert confirm.has_class("action-unavailable")
+        assert "Already blocked" in (confirm.tooltip or "")
+        assert unblock.disabled is False
+        status_text = str(status.render())
+        assert "Disconnected" in status_text
+        assert "Already blocked" in status_text
+
+
+@pytest.mark.asyncio
+async def test_audit_whitelist_disabled_for_allow_rows(app):
+    app.audit.write(
+        AdiuvareEvent(
+            identity="user:safe",
+            endpoint="GET /health",
+            score=0.05,
+            verdict="allow",
+            breakdown={"payload": 0.05},
+            detail={"ip": "203.0.113.1"},
+        )
+    )
+    async with app.run_test() as pilot:
+        await pilot.press("6")
+        await pilot.pause()
+
+        whitelist = app.query_one("#audit-whitelist", Button)
+        status = app.query_one("#audit-action-status", Static)
+
+        assert whitelist.disabled is True
+        assert whitelist.has_class("action-unavailable")
+        assert "non-allow" in (whitelist.tooltip or "")
+        assert "Unavailable" in str(status.render())
+
+
+@pytest.mark.asyncio
 async def test_connected_events_actions_use_runtime_commands(connected_app):
     async with connected_app.run_test() as pilot:
         await pilot.pause()

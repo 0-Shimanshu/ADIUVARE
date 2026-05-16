@@ -8,6 +8,11 @@ from textual.binding import Binding
 from textual.containers import Horizontal, HorizontalScroll, Vertical
 from textual.widgets import Button, DataTable, Input, Static
 
+from ..operator_actions import (
+    ActionAvailability,
+    apply_action_availability,
+    format_action_status,
+)
 from ..workspace import (
     PALETTE,
     WorkspaceView,
@@ -63,6 +68,7 @@ class AuditScreen(WorkspaceView):
                         yield Button("Unmonitor", id="audit-unmonitor", classes="outline")
                         yield Button("Whitelist", id="audit-whitelist", classes="success")
                         yield Button("Export JSON", id="audit-export-btn", classes="danger")
+                        yield Static("", id="audit-action-status")
 
     def on_mount(self) -> None:
         table = self.query_one("#audit-table", DataTable)
@@ -82,6 +88,8 @@ class AuditScreen(WorkspaceView):
             event.stop()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.disabled:
+            return
         button_id = event.button.id
         if button_id == "audit-search-btn":
             self.refresh_view()
@@ -210,18 +218,40 @@ class AuditScreen(WorkspaceView):
         self._app().whitelist_identity(str(self._selected.get("identity", "")))
         self._app().set_footer_status("whitelist sent")
 
-    def _update_actions(self) -> None:
-        event = self._selected
+    def _action_states(self, event: dict | None) -> dict[str, ActionAvailability]:
         has = event is not None
         verdict = str(event.get("verdict", "allow")) if event else "allow"
         ip = str(event.get("ip", "") or "") if event else ""
+        has_ip = bool(ip and ip != "-")
+        select_first = "Select an audit row first"
 
-        self.query_one("#audit-ban-ip", Button).disabled = not has or not ip or ip == "-"
-        self.query_one("#audit-unban-ip", Button).disabled = not has or not ip or ip == "-"
-        self.query_one("#audit-monitor", Button).disabled = not has
-        self.query_one("#audit-unmonitor", Button).disabled = not has
-        self.query_one("#audit-whitelist", Button).disabled = not has or verdict == "allow"
-        self.query_one("#audit-export-btn", Button).disabled = not has
+        return {
+            "audit-ban-ip": ActionAvailability(has and has_ip, select_first if not has else "No IP on event"),
+            "audit-unban-ip": ActionAvailability(has and has_ip, select_first if not has else "No IP on event"),
+            "audit-monitor": ActionAvailability(has, select_first),
+            "audit-unmonitor": ActionAvailability(has, select_first),
+            "audit-whitelist": ActionAvailability(
+                has and verdict != "allow",
+                select_first if not has else "Only for non-allow events",
+            ),
+            "audit-export-btn": ActionAvailability(has, select_first),
+        }
+
+    def _update_actions(self) -> None:
+        event = self._selected
+        states = self._action_states(event)
+
+        for button_id, state in states.items():
+            apply_action_availability(self.query_one(f"#{button_id}", Button), state)
+
+        blocked_reasons = [state.reason for state in states.values() if not state.enabled]
+        self.query_one("#audit-action-status", Static).update(
+            format_action_status(
+                connected=self._app().connected,
+                selected_label=str(event.get("identity", "?")) if event else None,
+                blocked_reasons=blocked_reasons,
+            )
+        )
 
     def _render_detail(self) -> None:
         panel = self.query_one("#audit-detail-panel", Static)
@@ -236,6 +266,7 @@ class AuditScreen(WorkspaceView):
         detail = event.get("detail") or {}
         breakdown = event.get("breakdown") or {}
 
+        states = self._action_states(event)
         lines = [
             f"[{PALETTE['dim']} bold]EVENT DETAIL[/]",
             "",
@@ -264,6 +295,16 @@ class AuditScreen(WorkspaceView):
                 f"[{PALETTE['very_dim']}]AI DETAIL[/]",
                 styled_label("AI verdict", str(ai.get("verdict", "n/a")), PALETTE["purple"]),
                 styled_label("Confidence", f"{ai.get('confidence', 0):.2f}", PALETTE["cyan"]),
+            ])
+
+        unavailable = [state.reason for state in states.values() if not state.enabled and state.reason]
+        if unavailable:
+            lines.extend([
+                "",
+                styled_separator(),
+                f"[{PALETTE['very_dim']}]ACTION NOTES[/]",
+                f"  [{PALETTE['very_dim']}]Unavailable: {unavailable[0]}[/]"
+                + (f" (+{len(unavailable) - 1} more)" if len(unavailable) > 1 else ""),
             ])
 
         panel.update("\n".join(lines))
