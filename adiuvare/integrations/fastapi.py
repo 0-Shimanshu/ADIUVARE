@@ -30,7 +30,7 @@ class AdiuvareMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         body = await request.body()
-        body_text = body.decode() if body else None
+        body_text = body.decode()
 
         ctx = build_http_ctx(
             identity=request.headers.get("x-user-id", request.client.host if request.client else "anon"),

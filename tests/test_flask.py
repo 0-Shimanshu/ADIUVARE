@@ -138,17 +138,23 @@ def test_flask_route_cfg_can_skip_trackB():
     )
     assert res.status_code == 200
 
-def test_flask_payload_merging(monkeypatch):
-    app = Flask(__name__)
-    guard = Guard()
-    captured_payload = None
+
+def _capture_flask_payload(monkeypatch, guard, client_call_func) -> str | None:
+    captured = None
 
     async def fake_inspect(ctx, **kwargs):
-        nonlocal captured_payload
-        captured_payload = ctx.payload
-        return type('Gate', (), {'passed': True, 'status_code': 200, 'block_reason': ''}), None
+        nonlocal captured
+        captured = ctx.payload
+        return type("Gate", (), {"passed": True, "status_code": 200, "block_reason": ""}), None
 
     monkeypatch.setattr(guard, "inspect", fake_inspect)
+    client_call_func()
+    return captured
+
+
+def test_flask_payload_merging_exact_shape(monkeypatch):
+    app = Flask(__name__)
+    guard = Guard()
     guard.use(app, framework="flask")
 
     @app.post("/merge")
@@ -156,31 +162,23 @@ def test_flask_payload_merging(monkeypatch):
         return jsonify(ok=True)
 
     client = app.test_client()
-    res = client.post(
-        "/merge?tag=a&tag=b&empty=&name=query_name",
-        data='{"body_key": "body_val", "name": "body_name"}',
-        headers={"x-user-id": "u1", "Content-Type": "application/json"}
+    body = '{"body_key": "body_val", "name": "body_name"}'
+
+    payload = _capture_flask_payload(
+        monkeypatch, guard,
+        lambda: client.post(
+            "/merge?tag=a&tag=b&empty=&name=query_name",
+            data=body,
+            headers={"x-user-id": "u1", "Content-Type": "application/json"},
+        ),
     )
-    assert res.status_code == 200
-    assert isinstance(captured_payload, str)
-    assert '"body_key": "body_val"' in captured_payload
-    assert '"name": "body_name"' in captured_payload
-    assert "a" in captured_payload
-    assert "b" in captured_payload
-    assert "query_name" in captured_payload
+
+    assert payload == body + "\n" + "a b  query_name"
 
 
 def test_flask_payload_raw_body(monkeypatch):
     app = Flask(__name__)
     guard = Guard()
-    captured_payload = None
-
-    async def fake_inspect(ctx, **kwargs):
-        nonlocal captured_payload
-        captured_payload = ctx.payload
-        return type('Gate', (), {'passed': True, 'status_code': 200, 'block_reason': ''}), None
-
-    monkeypatch.setattr(guard, "inspect", fake_inspect)
     guard.use(app, framework="flask")
 
     @app.post("/raw")
@@ -189,12 +187,116 @@ def test_flask_payload_raw_body(monkeypatch):
 
     client = app.test_client()
     sql_text = "select * from users where id = '' or 1=1"
-    res = client.post(
-        "/raw",
-        data=sql_text.encode(),
-        content_type="text/plain",
-        headers={"x-user-id": "u1"}
+
+    payload = _capture_flask_payload(
+        monkeypatch, guard,
+        lambda: client.post(
+            "/raw",
+            data=sql_text.encode(),
+            content_type="text/plain",
+            headers={"x-user-id": "u1"},
+        ),
     )
-    assert res.status_code == 200
-    assert isinstance(captured_payload, str)
-    assert sql_text in captured_payload
+
+    assert payload == sql_text
+
+
+def test_flask_payload_query_only(monkeypatch):
+    app = Flask(__name__)
+    guard = Guard()
+    guard.use(app, framework="flask")
+
+    @app.get("/items")
+    def items_view():
+        return jsonify(ok=True)
+
+    client = app.test_client()
+
+    payload = _capture_flask_payload(
+        monkeypatch, guard,
+        lambda: client.get(
+            "/items?status=active&limit=10",
+            headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u1"},
+        ),
+    )
+
+    assert payload == "active 10"
+
+
+def test_flask_payload_encoded_query_normalization(monkeypatch):
+    app = Flask(__name__)
+    guard = Guard()
+    guard.use(app, framework="flask")
+
+    @app.get("/search")
+    def search_view():
+        return jsonify(ok=True)
+
+    client = app.test_client()
+
+    payload = _capture_flask_payload(
+        monkeypatch, guard,
+        lambda: client.get(
+            "/search?name=hello%27world&city=New%20York",
+            headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u1"},
+        ),
+    )
+
+    assert payload == "hello'world New York"
+
+
+def test_flask_payload_blank_query_omission(monkeypatch):
+    app = Flask(__name__)
+    guard = Guard()
+    guard.use(app, framework="flask")
+
+    @app.post("/raw")
+    def raw_view():
+        return jsonify(ok=True)
+
+    client = app.test_client()
+    body = "select * from users where id = '' or 1=1"
+
+    payload_a = _capture_flask_payload(
+        monkeypatch, guard,
+        lambda: client.post(
+            "/raw",
+            data=body.encode(),
+            content_type="text/plain",
+            headers={"x-user-id": "u1"},
+        ),
+    )
+    assert payload_a == body
+
+    payload_b = _capture_flask_payload(
+        monkeypatch, guard,
+        lambda: client.post(
+            "/raw?a=&b=",
+            data=body.encode(),
+            content_type="text/plain",
+            headers={"x-user-id": "u1"},
+        ),
+    )
+    assert payload_b == body
+
+
+def test_flask_payload_bare_request(monkeypatch):
+    app = Flask(__name__)
+    guard = Guard()
+    guard.use(app, framework="flask")
+
+    @app.get("/ping")
+    def ping():
+        return jsonify(ok=True)
+
+    client = app.test_client()
+
+    payload = _capture_flask_payload(
+        monkeypatch, guard,
+        lambda: client.get(
+            "/ping",
+            headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u1"},
+        ),
+    )
+
+    assert payload is None

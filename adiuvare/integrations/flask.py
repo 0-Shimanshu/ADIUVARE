@@ -21,7 +21,7 @@ class AdiuvareMiddleware:
         if route_cfg.get("exempt"):
             return self._app(environ, start_response)
 
-        body_text = req.get_data(as_text=True) or None
+        body_text = req.get_data(as_text=True)
         query_text = req.query_string.decode("utf-8") if req.query_string else ""
         payload = ctx_payload(body_text, query_text)
 

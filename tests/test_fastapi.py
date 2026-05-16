@@ -1,4 +1,5 @@
 import asyncio
+import threading
 import time
 from pathlib import Path
 
@@ -267,17 +268,34 @@ def test_fastapi_route_ai_mode_override_is_used():
     assert res.status_code == 403
 
 
-def test_fastapi_payload_merging(monkeypatch):
-    app = FastAPI()
-    guard = Guard()
-    captured_payload = None
+def _capture_fastapi_payload(monkeypatch, guard, client_call_func) -> str | None:
+    """Intercept trackB to extract the raw payload the adapter assembled.
+
+    Uses a threading event so the capture works regardless of whether the
+    middleware invokes trackB inline (payload present) or in a background
+    thread (payload absent).
+    """
+    captured = None
+    done = threading.Event()
 
     async def fake_trackB(ctx):
-        nonlocal captured_payload
-        captured_payload = ctx.payload
+        nonlocal captured
+        captured = ctx.payload
+        done.set()
         return None
 
     monkeypatch.setattr(guard._pipeline, "trackB", fake_trackB)
+    client_call_func()
+    done.wait(timeout=1.0)
+    return captured
+
+
+def test_fastapi_payload_merging_exact_shape(monkeypatch):
+    """Combined body+query must match the exact contract shape, including the
+    newline separator and the deterministic double-space introduced by a
+    blank query value."""
+    app = FastAPI()
+    guard = Guard()
     guard.use(app, framework="fastapi")
 
     @app.post("/merge")
@@ -285,33 +303,24 @@ def test_fastapi_payload_merging(monkeypatch):
         return {"ok": True}
 
     client = TestClient(app)
-    target_url = "/merge?tag=a&tag=b&empty=&name=query_name"
-    res = client.post(
-        target_url,
-        content='{"body_key": "body_val", "name": "body_name"}',
-        headers={"x-user-id": "u1", "Content-Type": "application/json"}
+    body = '{"body_key": "body_val", "name": "body_name"}'
+
+    payload = _capture_fastapi_payload(
+        monkeypatch, guard,
+        lambda: client.post(
+            "/merge?tag=a&tag=b&empty=&name=query_name",
+            content=body,
+            headers={"x-user-id": "u1", "Content-Type": "application/json"},
+        ),
     )
 
-    assert res.status_code == 200
-    assert isinstance(captured_payload, str)
-    assert '"body_key": "body_val"' in captured_payload
-    assert '"name": "body_name"' in captured_payload
-    assert "a" in captured_payload
-    assert "b" in captured_payload
-    assert "query_name" in captured_payload
+    assert payload == body + "\n" + "a b  query_name"
 
 
 def test_fastapi_payload_raw_body(monkeypatch):
+    """A plain-text body with no query params should pass through unmodified."""
     app = FastAPI()
     guard = Guard()
-    captured_payload = None
-
-    async def fake_trackB(ctx):
-        nonlocal captured_payload
-        captured_payload = ctx.payload
-        return None
-
-    monkeypatch.setattr(guard._pipeline, "trackB", fake_trackB)
     guard.use(app, framework="fastapi")
 
     @app.post("/raw")
@@ -321,11 +330,121 @@ def test_fastapi_payload_raw_body(monkeypatch):
     client = TestClient(app)
     sql_payload = "select * from users where id = '' or 1=1"
 
-    res = client.post(
-        "/raw",
-        content=sql_payload,
-        headers={"x-user-id": "u1", "content-type": "text/plain"},
+    payload = _capture_fastapi_payload(
+        monkeypatch, guard,
+        lambda: client.post(
+            "/raw",
+            content=sql_payload,
+            headers={"x-user-id": "u1", "Content-Type": "text/plain"},
+        ),
     )
-    assert res.status_code == 200
-    assert isinstance(captured_payload, str)
-    assert sql_payload in captured_payload
+
+    assert payload == sql_payload
+
+
+def test_fastapi_payload_query_only(monkeypatch):
+    """When no body is sent, the payload should contain only the space-joined
+    query values with no trailing delimiters."""
+    app = FastAPI()
+    guard = Guard()
+    guard.use(app, framework="fastapi")
+
+    @app.get("/items")
+    async def items_endpoint():
+        return {"ok": True}
+
+    client = TestClient(app)
+
+    payload = _capture_fastapi_payload(
+        monkeypatch, guard,
+        lambda: client.get(
+            "/items?status=active&limit=10",
+            headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u1"},
+        ),
+    )
+
+    assert payload == "active 10"
+
+
+def test_fastapi_payload_encoded_query_normalization(monkeypatch):
+    """Percent-encoded sequences in query values must be decoded in a single
+    pass before reaching the signal layer, proving the adapter never leaks
+    raw network percentages downstream."""
+    app = FastAPI()
+    guard = Guard()
+    guard.use(app, framework="fastapi")
+
+    @app.get("/search")
+    async def search_endpoint():
+        return {"ok": True}
+
+    client = TestClient(app)
+
+    payload = _capture_fastapi_payload(
+        monkeypatch, guard,
+        lambda: client.get(
+            "/search?name=hello%27world&city=New%20York",
+            headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u1"},
+        ),
+    )
+
+    assert payload == "hello'world New York"
+
+
+def test_fastapi_payload_blank_query_omission(monkeypatch):
+    """Query strings that are structurally blank (empty or all-blank values)
+    must be fully elided, leaving only the raw body as the sole content."""
+    app = FastAPI()
+    guard = Guard()
+    guard.use(app, framework="fastapi")
+
+    @app.post("/raw")
+    async def raw_endpoint():
+        return {"ok": True}
+
+    client = TestClient(app)
+    body = "select * from users where id = '' or 1=1"
+
+    payload_a = _capture_fastapi_payload(
+        monkeypatch, guard,
+        lambda: client.post(
+            "/raw",
+            content=body,
+            headers={"x-user-id": "u1", "Content-Type": "text/plain"},
+        ),
+    )
+    assert payload_a == body
+
+    payload_b = _capture_fastapi_payload(
+        monkeypatch, guard,
+        lambda: client.post(
+            "/raw?a=&b=",
+            content=body,
+            headers={"x-user-id": "u1", "Content-Type": "text/plain"},
+        ),
+    )
+    assert payload_b == body
+
+
+def test_fastapi_payload_bare_request(monkeypatch):
+    """A bare GET with no body and no query should yield None, confirming the
+    adapter doesn't fabricate empty strings."""
+    app = FastAPI()
+    guard = Guard()
+    guard.use(app, framework="fastapi")
+
+    @app.get("/ping")
+    async def ping():
+        return {"ok": True}
+
+    client = TestClient(app)
+
+    payload = _capture_fastapi_payload(
+        monkeypatch, guard,
+        lambda: client.get(
+            "/ping",
+            headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u1"},
+        ),
+    )
+
+    assert payload is None
