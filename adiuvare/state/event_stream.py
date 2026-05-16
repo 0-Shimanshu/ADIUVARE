@@ -2,12 +2,12 @@ import asyncio
 import json
 import os
 import sys
-import tempfile
 import uuid
 from collections import deque
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import Any
+import tempfile
 
 
 def _event_data(event: Any) -> dict[str, Any]:
