@@ -57,9 +57,10 @@ One important consequence today:
 - a disconnected TUI can still show cached data and control-plane history, but
   that is not the same thing as mutating live runtime state
 
-This is an area to tighten further. The long-term goal is to make the offline
-story more explicit, either by disabling actions that cannot be applied for
-real or by giving local single-instance mode a true local mutation path.
+Disconnected operator mode is now more explicit in the TUI. When the runtime
+connection is unavailable, the interface clearly indicates cached inspection
+mode and state-changing operator actions are disabled instead of appearing
+authoritative.
 
 That means the TUI is strongest when attached to a running runtime.
 

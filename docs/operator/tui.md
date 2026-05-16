@@ -139,6 +139,12 @@ startup.
 
 ![Config screen](../assets/tui/config.png)
 
+## Disconnected mode
+
+When disconnected from the live runtime, the TUI operates in cached inspection
+mode. State-changing operator actions are unavailable until a live connection
+is restored.
+
 ## Signals
 
 Signals is the live scoring view.

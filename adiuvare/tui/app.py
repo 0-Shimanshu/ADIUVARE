@@ -128,6 +128,16 @@ class AdiuvareApp(App[None]):
         self._footer_note = text
         self._sync_footer(self._active_page())
 
+
+    def disconnected_action_notice(self, action: str) -> bool:
+       """Explain that operator actions are unavailable while disconnected."""
+       if self.connected:
+           return False
+
+       self.set_footer_status(
+           f"{action} unavailable while disconnected (cached inspection only)"
+        )
+       return True
     def runtime_snapshot(self) -> dict:
         snap = {
             "framework": self.config.meta.framework,
@@ -222,34 +232,49 @@ class AdiuvareApp(App[None]):
         self.confirm_block(identity)
 
     def monitor_identity(self, identity: str) -> None:
-        if self.connected:
-            self.run_worker(self._send_command("monitor_identity", {"identity": identity}), exclusive=False)
-            return
-        self.audit.write_patch("monitor_identity", {"identity": identity})
+        if self.disconnected_action_notice("monitor_identity"):
+           return
+
+        self.run_worker(
+           self._send_command("monitor_identity", {"identity": identity}),
+           exclusive=False,
+        )
 
     def unmonitor_identity(self, identity: str) -> None:
-        if self.connected:
-            self.run_worker(self._send_command("unmonitor_identity", {"identity": identity}), exclusive=False)
+        if self.disconnected_action_notice("unmonitor_identity"):
             return
-        self.audit.write_patch("unmonitor_identity", {"identity": identity})
+
+        self.run_worker(
+           self._send_command("unmonitor_identity", {"identity": identity}),
+           exclusive=False,
+        )
 
     def unblock_monitor(self, identity: str) -> None:
-        if self.connected:
-            self.run_worker(self._send_command("unblock_monitor", {"identity": identity}), exclusive=False)
-            return
-        self.audit.write_patch("unblock_monitor", {"identity": identity})
+        if self.disconnected_action_notice("unblock_monitor"):
+           return
+
+        self.run_worker(
+            self._send_command("unblock_monitor", {"identity": identity}),
+            exclusive=False,
+        )
 
     def ban_ip(self, ip: str) -> None:
-        if self.connected:
-            self.run_worker(self._send_command("ban_ip", {"ip": ip}), exclusive=False)
-            return
-        self.audit.write_patch("ban_ip", {"ip": ip})
+        if self.disconnected_action_notice("ban_ip"):
+           return
+
+        self.run_worker(
+             self._send_command("ban_ip", {"ip": ip}),
+             exclusive=False,
+        )
 
     def unban_ip(self, ip: str) -> None:
-        if self.connected:
-            self.run_worker(self._send_command("unban_ip", {"ip": ip}), exclusive=False)
-            return
-        self.audit.write_patch("unban_ip", {"ip": ip})
+        if self.disconnected_action_notice("unban_ip"):
+           return
+
+        self.run_worker(
+            self._send_command("unban_ip", {"ip": ip}),
+            exclusive=False,
+        )
 
     async def get_analysis_report(self, window_days: int = 7) -> dict:
         """Return the analysis report, falling back to local audit summarization when needed."""
@@ -303,13 +328,15 @@ class AdiuvareApp(App[None]):
         live = bool(snap.get("connected", False))
         if live:
             self.query_one("#header-status", Static).update(
-                Text.from_markup(f"[{PALETTE['green']}]connected[/]")
+                Text.from_markup(f"[{PALETTE['green']}]connected[/]"
+                )
             )
         else:
             self.query_one("#header-status", Static).update(
-                Text.from_markup(f"[{PALETTE['orange']}]offline[/]")
+                Text.from_markup(
+                    f"[{PALETTE['orange']}]DISCONNECTED - cached inspection only[/]"
+                )
             )
-
         mode = "observe" if snap.get("observe_only", False) else "enforce"
         mode_color = PALETTE["green"] if mode == "observe" else PALETTE["red"]
         self.query_one("#header-mode", Static).update(
