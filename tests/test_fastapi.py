@@ -238,6 +238,42 @@ def test_guard_auto_attaches_fastapi():
     assert guard.pipeline is not None
 
 
+def test_fastapi_drop_table_body_is_blocked():
+    app = FastAPI()
+    guard = Guard()
+    guard.use(app, framework="fastapi")
+
+    @app.post("/billing")
+    async def billing():
+        return {"ok": True}
+
+    client = TestClient(app)
+    res = client.post(
+        "/billing",
+        content="DROP TABLE users",
+        headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u90"},
+    )
+    assert res.status_code in {403, 429}
+
+
+def test_fastapi_clean_post_body_is_allowed():
+    app = FastAPI()
+    guard = Guard()
+    guard.use(app, framework="fastapi")
+
+    @app.post("/submit")
+    async def submit():
+        return {"ok": True}
+
+    client = TestClient(app)
+    res = client.post(
+        "/submit",
+        content="name=Alice&message=hello+world",
+        headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u91"},
+    )
+    assert res.status_code == 200
+
+
 def test_fastapi_route_ai_mode_override_is_used():
     app = FastAPI()
     guard = Guard()

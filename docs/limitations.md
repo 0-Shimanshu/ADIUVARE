@@ -57,12 +57,25 @@ One important consequence today:
 - a disconnected TUI can still show cached data and control-plane history, but
   that is not the same thing as mutating live runtime state
 
+ main
 Disconnected operator mode is now more explicit in the TUI. When the runtime
 connection is unavailable, the interface clearly indicates cached inspection
 mode and state-changing operator actions are disabled instead of appearing
 authoritative.
 
-That means the TUI is strongest when attached to a running runtime.
+The header bar shows `connected` or `offline` at all times. All seven screens
+remain open when disconnected, but state-changing actions taken offline only
+write a local audit record and do not change runtime state. The TUI is
+strongest when attached to a running runtime.
+
+For the full breakdown of which screens work offline, which actions require a
+live runtime, and how the UI signals connection state, see
+[TUI](operator/tui.md).
+
+This is an area to tighten further. The long-term goal is to make the offline
+story more explicit, either by disabling actions that cannot be applied for
+real or by giving local single-instance mode a true local mutation path.
+ main
 
 ## The TUI is still a bounded operator console
 
@@ -185,6 +198,55 @@ Before a broader publish story is in place, the smoothest setup is still:
 
 That is fine for contributors and early adopters. It is simply different from a
 fully polished "pip install from PyPI and go" story on every machine.
+
+## Payload detection limits
+
+Payload inspection is intentionally narrow and focused on high-signal patterns. It does not attempt full coverage of all attack classes.
+
+### Strong areas
+
+- common SQL injection patterns such as `SELECT`, `UNION`, and simple tautologies
+- basic XSS markers such as `<script>` and inline JavaScript
+- path traversal sequences like `../` and encoded variants
+- simple normalization and encoding variants of these patterns
+
+### Known gaps
+
+- broader or uncommon attack families
+- multi-step or context-dependent payloads
+- deeply obfuscated or fragmented inputs
+- domain-specific payload formats
+
+These cases may be detected inconsistently or assigned lower scores.
+
+### False positives
+
+The system can over-trigger on benign content that includes risky strings.
+
+Typical cases:
+
+- SQL examples in tutorials or documentation
+- literal HTML or script tags in docs
+- copied payloads used for explanation or testing
+
+Examples:
+
+- "How do I write SELECT * FROM users in a tutorial?"
+- "How do I print <script> literally in docs?"
+
+These are not attacks, but may still produce elevated payload scores.
+
+### Practical implication
+
+Payload detection should not be treated as complete or authoritative.
+
+Use:
+
+- custom signals
+- route-level policies
+- threshold tuning
+
+to adapt behavior to real workloads and reduce false positives.
 
 ## Related
 

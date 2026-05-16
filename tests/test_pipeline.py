@@ -113,6 +113,40 @@ def test_pipeline_repeats_pick_up_identity_state():
     assert store.get("u1").score_ewma < second.score
 
 
+def test_pipeline_clean_payload_produces_allow_verdict():
+    ctx = RequestContext(
+        identity="u1",
+        payload="hello world",
+        url="/greet",
+        method="POST",
+        headers={"User-Agent": "Mozilla/5.0"},
+        ip="127.0.0.1",
+        endpoint="/greet",
+    )
+
+    gate, out = asyncio.run(Pipeline(IdentityStore()).process(ctx))
+    assert gate.passed is True
+    assert out is not None
+    assert out.verdict == "allow"
+
+
+def test_pipeline_high_confidence_sqli_produces_non_allow_verdict():
+    ctx = RequestContext(
+        identity="u1",
+        payload="DROP TABLE users",
+        url="/billing",
+        method="POST",
+        headers={"User-Agent": "Mozilla/5.0"},
+        ip="127.0.0.1",
+        endpoint="/billing",
+    )
+
+    gate, out = asyncio.run(Pipeline(IdentityStore()).process(ctx))
+    assert gate.passed is True
+    assert out is not None
+    assert out.verdict in {"throttle", "block"}
+
+
 def test_pipeline_monitored_identity_gets_multiplier_and_consumes_window():
     monitored_store = IdentityStore()
     plain_store = IdentityStore()
