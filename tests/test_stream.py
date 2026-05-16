@@ -345,11 +345,6 @@ def test_event_stream_client_subscribes_to_redis_rows(monkeypatch):
 
     asyncio.run(run())
 
-from pathlib import Path
-import tempfile
-
-from adiuvare.state.event_stream import UnixSocketEventStream
-
 
 def test_event_stream_uses_tempfile_dir():
     stream = UnixSocketEventStream(name="test")
