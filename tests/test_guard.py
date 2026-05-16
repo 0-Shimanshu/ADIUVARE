@@ -100,3 +100,17 @@ def test_guard_check_detects_shell_probe_via_pipe():
     assert gate.passed is True
     assert event is not None
     assert event.score > 0.0
+
+def test_guard_check_detects_command_probe_logical_and():
+    guard = Guard()
+    gate, event = guard.check_sync("u4", payload="hello && cat /etc/passwd")
+    assert gate.passed is True
+    assert event is not None
+    assert event.score > 0.0
+
+def test_guard_check_detects_command_probe_backticks():
+    guard = Guard()
+    gate, event = guard.check_sync("u5", payload="echo `cat /etc/passwd`")
+    assert gate.passed is True
+    assert event is not None
+    assert event.score > 0.0
