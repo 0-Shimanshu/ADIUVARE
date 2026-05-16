@@ -1,8 +1,10 @@
 import asyncio
 import json
 import sys
+import tempfile
 import types
 from collections import defaultdict
+from pathlib import Path
 
 from adiuvare.core.models import AdiuvareEvent
 from adiuvare.state.event_stream import EventStreamClient, RedisEventStream, UnixSocketEventStream
@@ -342,3 +344,13 @@ def test_event_stream_client_subscribes_to_redis_rows(monkeypatch):
             await stream.stop()
 
     asyncio.run(run())
+
+
+def test_unix_event_stream_uses_tempfile_dir():
+    stream = UnixSocketEventStream(name="test")
+    assert str(Path(tempfile.gettempdir())) in stream.path
+
+
+def test_redis_event_stream_uses_tempfile_dir():
+    stream = RedisEventStream(project="test", redis_url="redis://localhost")
+    assert str(Path(tempfile.gettempdir())) in stream.path
