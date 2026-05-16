@@ -407,3 +407,31 @@ def test_payload_keeps_pipe_filter_param_clean():
 
     res = asyncio.run(PayloadSignal().extract(ctx))
     assert res.score == 0.0
+def test_payload_marks_top_level_nosql_operator_text():
+    ctx = RequestContext(
+        identity="u1",
+        payload='{"$ne":null}',
+        url="/login",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/login",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.6
+
+
+def test_payload_keeps_nosql_operator_docs_clean():
+    ctx = RequestContext(
+        identity="u1",
+        payload="Explain what $ne means in MongoDB docs",
+        url="/docs",
+        method="GET",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/docs",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score == 0.0
