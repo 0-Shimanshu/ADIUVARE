@@ -1,6 +1,6 @@
 import asyncio
 
-import pytest
+
 
 from adiuvare.core.models import RequestContext
 from adiuvare.signals.ip_rep import IPRepSignal
