@@ -1,0 +1,2 @@
+[console_scripts]
+adv = adiuvare.cli:main

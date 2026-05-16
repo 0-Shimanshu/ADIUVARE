@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import sys
+import tempfile
 import uuid
 from collections import deque
 from dataclasses import asdict, is_dataclass
@@ -64,7 +65,7 @@ class UnixSocketEventStream:
     ) -> None:
         self._kind = "unix" if hasattr(asyncio, "start_unix_server") else "tcp"
         if sock_path is None:
-            base = Path(os.getenv("TEMP", "/tmp"))
+            base = Path(tempfile.gettempdir())
             tail = f"{name}.sock" if pid is None else f"{name}-{pid}.sock"
             self.path = str(base / tail)
         else:
@@ -233,7 +234,7 @@ class RedisEventStream:
     """Mirror the local event stream contract on top of Redis pubsub and a replay list."""
 
     def __init__(self, project: str, redis_url: str) -> None:
-        base = Path(os.getenv("TEMP", "/tmp"))
+        base = Path(tempfile.gettempdir())
         tail = f"{project}-{os.getpid()}.sock"
         self.path = str(base / tail)
         self._url = redis_url
