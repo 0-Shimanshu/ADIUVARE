@@ -7,12 +7,12 @@ whether you want just the core library, the TUI, or the Redis backend too.
 
 | need | command |
 | --- | --- |
-| core library | `python -m pip install .` |
-| core + TUI | `python -m pip install ".[tui]"` |
-| core + Redis | `python -m pip install ".[redis]"` |
-| editable local dev | `pip install -e .` |
-| editable dev test stack | `pip install -e ".[dev]"` |
-| editable dev with extras | `pip install -e ".[dev,tui,redis]"` |
+| core library | `python -m pip install "git+https://github.com/username/adiuvare.git"` |
+| core + TUI | `python -m pip install "adiuvare[tui] @ git+https://github.com/username/adiuvare.git"` |
+| core + Redis | `python -m pip install "adiuvare[redis] @ git+https://github.com/username/adiuvare.git"` |
+| editable local dev | `python -m pip install -e .` |
+| editable dev test stack | `python -m pip install -e ".[dev]"` |
+| editable dev with extras | `python -m pip install -e ".[dev,tui,redis]"` |
 
 ## Verify the install
 
@@ -47,7 +47,7 @@ can read it.
 If you want the Textual operator console, install the TUI extra.
 
 ```bash
-python -m pip install ".[tui]"
+python -m pip install "adiuvare[tui] @ git+https://github.com/username/adiuvare.git"
 ```
 
 Then launch it with:
@@ -71,7 +71,7 @@ The current TUI has seven screens:
 If you want the Redis event-stream backend, install the Redis extra.
 
 ```bash
-python -m pip install ".[redis]"
+python -m pip install "adiuvare[redis] @ git+https://github.com/username/adiuvare.git"
 ```
 
 Then set:
