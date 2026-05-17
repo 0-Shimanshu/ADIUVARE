@@ -269,12 +269,6 @@ def test_fastapi_route_ai_mode_override_is_used():
 
 
 def _capture_fastapi_payload(monkeypatch, guard, client_call_func) -> str | None:
-    """Intercept trackB to extract the raw payload the adapter assembled.
-
-    Uses a threading event so the capture works regardless of whether the
-    middleware invokes trackB inline (payload present) or in a background
-    thread (payload absent).
-    """
     captured = None
     done = threading.Event()
 
@@ -291,9 +285,6 @@ def _capture_fastapi_payload(monkeypatch, guard, client_call_func) -> str | None
 
 
 def test_fastapi_payload_merging_exact_shape(monkeypatch):
-    """Combined body+query must match the exact contract shape, including the
-    newline separator and the deterministic double-space introduced by a
-    blank query value."""
     app = FastAPI()
     guard = Guard()
     guard.use(app, framework="fastapi")
@@ -318,7 +309,6 @@ def test_fastapi_payload_merging_exact_shape(monkeypatch):
 
 
 def test_fastapi_payload_raw_body(monkeypatch):
-    """A plain-text body with no query params should pass through unmodified."""
     app = FastAPI()
     guard = Guard()
     guard.use(app, framework="fastapi")
@@ -343,8 +333,6 @@ def test_fastapi_payload_raw_body(monkeypatch):
 
 
 def test_fastapi_payload_query_only(monkeypatch):
-    """When no body is sent, the payload should contain only the space-joined
-    query values with no trailing delimiters."""
     app = FastAPI()
     guard = Guard()
     guard.use(app, framework="fastapi")
@@ -367,9 +355,6 @@ def test_fastapi_payload_query_only(monkeypatch):
 
 
 def test_fastapi_payload_encoded_query_normalization(monkeypatch):
-    """Percent-encoded sequences in query values must be decoded in a single
-    pass before reaching the signal layer, proving the adapter never leaks
-    raw network percentages downstream."""
     app = FastAPI()
     guard = Guard()
     guard.use(app, framework="fastapi")
@@ -392,8 +377,6 @@ def test_fastapi_payload_encoded_query_normalization(monkeypatch):
 
 
 def test_fastapi_payload_blank_query_omission(monkeypatch):
-    """Query strings that are structurally blank (empty or all-blank values)
-    must be fully elided, leaving only the raw body as the sole content."""
     app = FastAPI()
     guard = Guard()
     guard.use(app, framework="fastapi")
@@ -427,8 +410,6 @@ def test_fastapi_payload_blank_query_omission(monkeypatch):
 
 
 def test_fastapi_payload_bare_request(monkeypatch):
-    """A bare GET with no body and no query should yield None, confirming the
-    adapter doesn't fabricate empty strings."""
     app = FastAPI()
     guard = Guard()
     guard.use(app, framework="fastapi")
