@@ -241,7 +241,7 @@ def test_payload_still_flags_real_sqli_attempt():
 
     res = asyncio.run(PayloadSignal().extract(ctx))
 
-    assert res.score < 0.6
+    assert res.score >= 0.7
     
 
 def test_payload_marks_drop_table_text():
@@ -437,5 +437,4 @@ def test_payload_keeps_pipe_filter_param_clean():
 
     res = asyncio.run(PayloadSignal().extract(ctx))
     assert res.score == 0.0
-    assert res.score >= 0.7
     
