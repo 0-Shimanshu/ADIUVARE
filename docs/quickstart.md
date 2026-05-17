@@ -9,19 +9,19 @@ the shortest path.
 Adiuvare is installable from source. Install it directly from the repository root into your virtual environment:
 
 ```bash
-python -m pip install "git+[https://github.com/username/adiuvare.git](https://github.com/username/adiuvare.git)"
+python -m pip install "git+https://github.com/0-Shimanshu/ADIUVARE.git"
 ```
 
 If you also want the TUI:
 
 ```bash
-python -m pip install "adiuvare[tui] @ git+[https://github.com/username/adiuvare.git](https://github.com/username/adiuvare.git)"
+python -m pip install "adiuvare[tui] @ git+https://github.com/0-Shimanshu/ADIUVARE.git"
 ```
 
 If you want the Redis backend too:
 
 ```bash
-python -m pip install "adiuvare[redis] @ git+[https://github.com/username/adiuvare.git](https://github.com/username/adiuvare.git)"
+python -m pip install "adiuvare[redis] @ git+https://github.com/0-Shimanshu/ADIUVARE.git"
 ```
 
 ## 2. Create `adiuvare.yaml`
