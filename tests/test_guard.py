@@ -108,11 +108,16 @@ def test_guard_check_detects_etc_passwd_probe():
     guard = Guard()
     gate, event = guard.check_sync(
         "u4",
+<<<<<<< HEAD
         payload="$(cat /etc/passwd)",
+=======
+        payload="cat /etc/passwd",
+>>>>>>> ced90e2 (Fix etc passwd test syntax)
     )
     assert gate.passed is True
     assert event is not None
     assert event.score > 0.0
+<<<<<<< HEAD
 
 
 def test_route_decorators_preserve_sync_handler_shape():
@@ -153,3 +158,5 @@ def test_route_decorators_preserve_async_handler_shape():
 
     asyncio.run(run())
 
+=======
+>>>>>>> ced90e2 (Fix etc passwd test syntax)
