@@ -388,6 +388,11 @@ async def test_ai_screen_uses_runtime_report_and_question(connected_app):
         assert ai_screen._last_report["summary"] == "Connected report summary"
 
         await pilot.press("k")
+        ask_status = str(connected_app.query_one("#ai-ask-status", Static).render())
+        assert "runtime:" in ask_status
+        assert "model reach:" in ask_status
+        assert "AI connected" not in ask_status
+
         connected_app.query_one("#ai-chat-input", Input).value = "what are the top threats?"
         connected_app.query_one("#ai-chat-send", Button).press()
         await pilot.pause()
