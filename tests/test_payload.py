@@ -451,3 +451,46 @@ def test_payload_keeps_bash_docs_text_clean():
 
     res = asyncio.run(PayloadSignal().extract(ctx))
     assert res.score == 0.0
+def test_payload_keeps_curl_docs_clean():
+    ctx = RequestContext(
+        identity="u1",
+        payload="How do I use curl against localhost?",
+        url="/docs",
+        method="GET",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/docs",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score == 0.0
+
+
+def test_payload_keeps_wget_docs_clean():
+    ctx = RequestContext(
+        identity="u1",
+        payload="Example: wget https://example.com/file.zip",
+        url="/docs",
+        method="GET",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/docs",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score == 0.0
+
+
+def test_payload_keeps_markdown_codeblock_clean():
+    ctx = RequestContext(
+        identity="u1",
+        payload="```bash\ncurl http://localhost:8000\n```",
+        url="/docs",
+        method="GET",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/docs",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score == 0.0
