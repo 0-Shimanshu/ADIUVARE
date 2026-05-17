@@ -37,8 +37,10 @@ cmd_pats = [
     (_re.compile(r"(?i)\$\(\s*(?:cat|curl|wget|bash|sh|nc|python|perl|php|ruby|rm)\b"),0.74,"cmd_subshell"),
     (_re.compile(r"(?i)(?:[;&]|\|\|?)\s*(?:cat|curl|wget|bash|sh|nc|python|perl|php|ruby|rm)\b"),0.76,"cmd_sep"),
     (_re.compile(r"(?i)`\s*(?:cat|curl|wget|bash|sh|nc|python|perl|php|ruby|id|whoami)\b"),0.74,"cmd_backtick"),
-]
 
+    (_re.compile(r"(?i);\s*cat\s+/etc/passwd\b"),0.78,"cmd_passwd_probe"),
+    (_re.compile(r"(?i)\$\(\s*cat\s+/etc/passwd\s*\)"),0.78,"cmd_subshell_passwd"),
+]
 ssti_pats = [
     (_re.compile(r"\{\{\s*[\w'\".\[\]]+\s*[*+/%-]\s*[\w'\".\[\]]+\s*\}\}"),0.68,"ssti_expr"),
     (_re.compile(r"\{\{[^{}]{0,80}__\w+__[^{}]{0,80}\}\}"),0.74,"ssti_dunder"),
