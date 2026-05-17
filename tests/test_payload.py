@@ -212,3 +212,33 @@ def test_payload_keeps_union_phrase_clean():
 
     res = asyncio.run(PayloadSignal().extract(ctx))
     assert res.score == 0.0
+
+def test_payload_keeps_sql_discussion_text_lower():
+    ctx = RequestContext(
+        identity="u1",
+        payload="How do I write SELECT * FROM users in a tutorial?",
+        url="/docs",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/docs",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score < 0.7
+
+
+def test_payload_keeps_script_discussion_text_lower():
+    ctx = RequestContext(
+        identity="u1",
+        payload="How do I print <script> literally in docs?",
+        url="/docs",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/docs",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score < 0.6
+    
