@@ -435,3 +435,46 @@ def test_payload_keeps_nosql_operator_docs_clean():
 
     res = asyncio.run(PayloadSignal().extract(ctx))
     assert res.score == 0.0
+def test_payload_keeps_nosql_regex_docs_clean():
+    ctx = RequestContext(
+        identity="u1",
+        payload="MongoDB $regex operator tutorial",
+        url="/docs",
+        method="GET",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/docs",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score == 0.0
+
+
+def test_payload_keeps_nosql_ne_docs_clean():
+    ctx = RequestContext(
+        identity="u1",
+        payload="How does $ne work in MongoDB?",
+        url="/docs",
+        method="GET",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/docs",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score == 0.0
+
+
+def test_payload_marks_encoded_top_level_nosql_operator_text():
+    ctx = RequestContext(
+        identity="u1",
+        payload="%7B%22%24ne%22%3Anull%7D",
+        url="/login",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/login",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.6
