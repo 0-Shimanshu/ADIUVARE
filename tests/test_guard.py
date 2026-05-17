@@ -152,3 +152,4 @@ def test_route_decorators_preserve_async_handler_shape():
             assert await wrapped() == "ok"
 
     asyncio.run(run())
+
