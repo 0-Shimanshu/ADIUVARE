@@ -607,7 +607,6 @@ def test_payload_keeps_bash_docs_text_clean():
 
 
 
-
 def test_payload_keeps_curl_docs_clean():
     ctx = RequestContext(
         identity="u1",
@@ -637,6 +636,7 @@ def test_payload_keeps_nosql_ne_docs_clean():
 
     res = asyncio.run(PayloadSignal().extract(ctx))
     assert res.score == 0.0
+
 
 def test_payload_keeps_wget_docs_clean():
     ctx = RequestContext(
@@ -668,6 +668,7 @@ def test_payload_marks_encoded_top_level_nosql_operator_text():
     res = asyncio.run(PayloadSignal().extract(ctx))
     assert res.score >= 0.6
 
+
 def test_payload_keeps_markdown_codeblock_clean():
     ctx = RequestContext(
         identity="u1",
@@ -681,4 +682,3 @@ def test_payload_keeps_markdown_codeblock_clean():
 
     res = asyncio.run(PayloadSignal().extract(ctx))
     assert res.score == 0.0
-
