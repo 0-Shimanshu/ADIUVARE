@@ -7,9 +7,9 @@ whether you want just the core library, the TUI, or the Redis backend too.
 
 | need | command |
 | --- | --- |
-| core library | `pip install adiuvare` |
-| core + TUI | `pip install "adiuvare[tui]"` |
-| core + Redis | `pip install "adiuvare[redis]"` |
+| core library | `python -m pip install .` |
+| core + TUI | `python -m pip install ".[tui]"` |
+| core + Redis | `python -m pip install ".[redis]"` |
 | editable local dev | `pip install -e .` |
 | editable dev test stack | `pip install -e ".[dev]"` |
 | editable dev with extras | `pip install -e ".[dev,tui,redis]"` |
@@ -47,7 +47,7 @@ can read it.
 If you want the Textual operator console, install the TUI extra.
 
 ```bash
-pip install "adiuvare[tui]"
+python -m pip install ".[tui]"
 ```
 
 Then launch it with:
@@ -71,7 +71,7 @@ The current TUI has seven screens:
 If you want the Redis event-stream backend, install the Redis extra.
 
 ```bash
-pip install "adiuvare[redis]"
+python -m pip install ".[redis]"
 ```
 
 Then set:
@@ -138,7 +138,7 @@ heuristics. That keeps the runtime usable, but it is still the weaker path.
 Install the TUI extra:
 
 ```bash
-pip install "adiuvare[tui]"
+python -m pip install ".[tui]"
 ```
 
 ### Redis import errors
@@ -146,7 +146,7 @@ pip install "adiuvare[tui]"
 Install the Redis extra:
 
 ```bash
-pip install "adiuvare[redis]"
+python -m pip install ".[redis]"
 ```
 
 ### libinjection not loading
