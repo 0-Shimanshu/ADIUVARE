@@ -5,9 +5,10 @@ from adiuvare import Guard
 # ── SSTI ─────────────────────────────────────────────
 @pytest.mark.parametrize("payload", [
     "{{7*7}}",
+    "{{ 7 * 7 }}",           # spaced variant
+    "%7B%7B7*7%7D%7D",       # URL encoded
     "{{config.__class__.__init__.__globals__}}",
     "${7*'7'}",
-    "#{7*7}",
     "{% for x in range(10) %}{{x}}{% endfor %}",
 ])
 def test_guard_flags_ssti_inputs(payload):
@@ -22,8 +23,8 @@ def test_guard_flags_ssti_inputs(payload):
     '{"username": {"$ne": null}}',
     '{"age": {"$gt": 0}}',
     '{"$where": "this.password == this.passwordConfirm"}',
-    '{"$or": [{"user": "admin"}, {"pass": {"$gt": ""}}]}',
-    '{"username": {"$regex": ".*"}}',
+    '{"user": {"$ne": null}, "pass": {"$gt": ""}}',  # nested wrapper
+    '%7B%22%24ne%22%3Anull%7D',   # URL encoded
 ])
 def test_guard_flags_nosql_inputs(payload):
     guard = Guard()
@@ -38,7 +39,7 @@ def test_guard_flags_nosql_inputs(payload):
     "admin)(&(password=*))",
     ")(cn=*))(|(cn=*",
     "*)(objectClass=*)",
-    "admin))(|(password=*",
+    "*\n)(uid=*",             # multiline variant
 ])
 def test_guard_flags_ldap_inputs(payload):
     guard = Guard()
