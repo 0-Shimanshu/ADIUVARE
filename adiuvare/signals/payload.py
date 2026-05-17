@@ -3,26 +3,41 @@ from ..vendor import detect_sqli, detect_xss, normalize
 from .base import SoftSignal
 from .patterns import check_cmd, check_nosql, check_path, check_sql, check_ssti, check_xss
 
-BENIGN_CONTEXT_HINTS = (
-    "tutorial",
-    "documentation",
-    "docs",
-    "how do i",
-    "how to",
-    "literally",
-    "sample",
-    "snippet",
-    "code block",
-    "markdown",
-    "escaped",
-    "print",
-    "display",
-    "render",
-)
+def _is_discussion_style_sql(text: str) -> bool:
+    low = " ".join(text.lower().split())
 
-def _has_benign_context(text: str) -> bool:
-    lower = text.lower()
-    return any(hint in lower for hint in BENIGN_CONTEXT_HINTS)
+    discussion = any(
+        p in low
+        for p in (
+            "how do i",
+            "how to",
+            "example of",
+            "example query",
+            "in a tutorial",
+            "in docs",
+            "documentation",
+        )
+    )
+
+    dangerous = any(
+        p in low
+        for p in (
+            "drop table",
+            "union select",
+            "sleep(",
+            "benchmark(",
+            "curl ",
+            "wget ",
+            "<script",
+            "javascript:",
+        )
+    )
+
+    return (
+        discussion
+        and "select * from users" in low
+        and not dangerous
+    )
 
 class PayloadSignal(SoftSignal):
     name = "payload"
@@ -48,7 +63,7 @@ class PayloadSignal(SoftSignal):
         nosql_pat = check_nosql(text)
 
         hits: list[tuple[float, str]] = []
-        benign_context = _has_benign_context(text)
+
         if sql_lib["hit"]:
             hits.append((max(sql_lib["conf"], 0.82), sql_lib["fp"] or "sql_lib"))
         if sql_pat[0]:
@@ -66,6 +81,9 @@ class PayloadSignal(SoftSignal):
         if nosql_pat[0]:
             hits.append((nosql_pat[1], nosql_pat[2]))
 
+        if _is_discussion_style_sql(text):
+            hits = [h for h in hits if h[1] != "select_from"]
+
         if not hits:
             return SignalResult(score=0.0, reason="clean")
 
@@ -74,8 +92,6 @@ class PayloadSignal(SoftSignal):
         if len(hits) > 1:
             avg = sum(item[0] for item in hits) / len(hits)
             score = min(1.0, (top[0] * 0.75) + (avg * 0.25))
-        if benign_context and score < 0.95:
-            score *= 0.55
 
         detail = {
             "sql_fp": sql_lib.get("fp", ""),

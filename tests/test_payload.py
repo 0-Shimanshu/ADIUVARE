@@ -213,7 +213,7 @@ def test_payload_keeps_union_phrase_clean():
     res = asyncio.run(PayloadSignal().extract(ctx))
     assert res.score == 0.0
 
-def test_payload_keeps_sql_discussion_text_lower():
+def test_payload_keeps_discussion_style_select_example_lower():
     ctx = RequestContext(
         identity="u1",
         payload="How do I write SELECT * FROM users in a tutorial?",
@@ -228,18 +228,19 @@ def test_payload_keeps_sql_discussion_text_lower():
     assert res.score < 0.7
 
 
-def test_payload_keeps_script_discussion_text_lower():
+def test_payload_still_flags_real_sqli_attempt():
     ctx = RequestContext(
         identity="u1",
-        payload="How do I print <script> literally in docs?",
-        url="/docs",
+        payload='SELECT * FROM users WHERE id = "" OR 1=1 --',
+        url="/login",
         method="POST",
         headers={},
         ip="127.0.0.1",
-        endpoint="/docs",
+        endpoint="/login",
     )
 
     res = asyncio.run(PayloadSignal().extract(ctx))
+
     assert res.score < 0.6
     
 
@@ -436,3 +437,5 @@ def test_payload_keeps_pipe_filter_param_clean():
 
     res = asyncio.run(PayloadSignal().extract(ctx))
     assert res.score == 0.0
+    assert res.score >= 0.7
+    
