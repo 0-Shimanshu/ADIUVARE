@@ -14,7 +14,7 @@ runtime:
 
 ai:
   enabled: false
-  mode: off
+  mode: "off"
   model: llama3
   base_url: http://127.0.0.1:11434
 
