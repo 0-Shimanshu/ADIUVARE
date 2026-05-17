@@ -100,3 +100,5 @@ def test_guard_check_detects_shell_probe_via_pipe():
     assert gate.passed is True
     assert event is not None
     assert event.score > 0.0
+
+test_guard_check_detects_etc_passwd_probe():
