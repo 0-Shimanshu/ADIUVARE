@@ -127,3 +127,22 @@ def test_gate_tracks_rate_limit_independently_per_identity():
     ctx_u2 = make_ctx("u2")
     res = run_trackA(ctx_u2, store)
     assert res.passed is True
+
+
+def test_gate_recovers_after_rate_limit_expiration():
+    store = IdentityStore()
+    ctx = make_ctx("u1")
+    for _ in range(201):
+        run_trackA(ctx, store)
+    assert store.is_blocked("u1") is True
+
+    # Manually expire the block
+    win = store.get("u1")
+    win.blocked_until = time.time() - 1
+    store.update("u1", win)
+
+    assert store.is_blocked("u1") is False
+
+    # The user should be able to make requests now
+    res = run_trackA(ctx, store)
+    assert res.passed is True

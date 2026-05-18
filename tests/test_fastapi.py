@@ -465,3 +465,20 @@ def test_fastapi_payload_bare_request(monkeypatch):
     )
 
     assert payload is None
+
+
+def test_fastapi_reading_body_in_handler():
+    from fastapi import Request
+    app = FastAPI()
+    guard = Guard()
+    guard.use(app, framework="fastapi")
+
+    @app.post("/read-body")
+    async def read_body(request: Request):
+        data = await request.json()
+        return {"data": data}
+
+    client = TestClient(app)
+    res = client.post("/read-body", json={"hello": "world"}, headers={"x-user-id": "u1"})
+    assert res.status_code == 200
+    assert res.json() == {"data": {"hello": "world"}}

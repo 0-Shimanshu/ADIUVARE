@@ -62,8 +62,12 @@ class IdentityStore:
             if win is None:
                 return False
 
+            if win.blocked_until == 0.0:
+                return False
+
             if win.blocked_until <= time.time():
                 win.blocked_until = 0.0
+                win.seen = 0
                 self.update(identity, win)
                 return False
 
