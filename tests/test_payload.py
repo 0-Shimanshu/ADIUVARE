@@ -407,3 +407,48 @@ def test_payload_keeps_pipe_filter_param_clean():
 
     res = asyncio.run(PayloadSignal().extract(ctx))
     assert res.score == 0.0
+
+
+def test_payload_marks_ldap_injection_probe():
+    ctx = RequestContext(
+        identity="u1",
+        payload="*)(uid=*))(|(uid=*",
+        url="/search",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/search",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.7
+
+
+def test_payload_keeps_ldap_syntax_discussion_clean():
+    ctx = RequestContext(
+        identity="u1",
+        payload="Can you explain LDAP filter syntax in a docs example?",
+        url="/search",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/search",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score == 0.0
+
+
+def test_payload_keeps_uid_filter_tutorial_clean():
+    ctx = RequestContext(
+        identity="u1",
+        payload="Show how uid filters work in a tutorial, like (uid=john.doe).",
+        url="/search",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/search",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score == 0.0

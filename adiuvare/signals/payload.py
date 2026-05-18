@@ -4,6 +4,16 @@ from .base import SoftSignal
 from .patterns import check_cmd, check_nosql, check_path, check_sql, check_ssti, check_xss
 
 
+def check_ldap(text: str) -> tuple[bool, float, str]:
+    if ")(uid=" not in text and "))(|(" not in text:
+        return (False, 0.0, "")
+    import re
+    _LDAP = re.compile(r"\*\)\s*\(\s*uid\s*=\s*\*?\s*\)\s*\)\s*\(\|\s*\(\s*uid\s*=")
+    if _LDAP.search(text):
+        return (True, 0.82, "ldap_injection")
+    return (False, 0.0, "")
+
+
 class PayloadSignal(SoftSignal):
     name = "payload"
     weight = 0.40
@@ -26,6 +36,7 @@ class PayloadSignal(SoftSignal):
         cmd_pat = check_cmd(text)
         ssti_pat = check_ssti(text)
         nosql_pat = check_nosql(text)
+        ldap_pat = check_ldap(text)
 
         hits: list[tuple[float, str]] = []
         if sql_lib["hit"]:
@@ -44,6 +55,8 @@ class PayloadSignal(SoftSignal):
             hits.append((ssti_pat[1], ssti_pat[2]))
         if nosql_pat[0]:
             hits.append((nosql_pat[1], nosql_pat[2]))
+        if ldap_pat[0]:
+            hits.append((ldap_pat[1], ldap_pat[2]))
 
         if not hits:
             return SignalResult(score=0.0, reason="clean")
@@ -62,5 +75,6 @@ class PayloadSignal(SoftSignal):
             "cmd_pat": cmd_pat[2],
             "ssti_pat": ssti_pat[2],
             "nosql_pat": nosql_pat[2],
+            "ldap_pat": ldap_pat[2],
         }
         return SignalResult(score=score, reason=top[1], detail=detail)
