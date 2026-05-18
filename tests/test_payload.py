@@ -605,8 +605,6 @@ def test_payload_keeps_bash_docs_text_clean():
 
 
 
-
-
 def test_payload_keeps_curl_docs_clean():
     ctx = RequestContext(
         identity="u1",
