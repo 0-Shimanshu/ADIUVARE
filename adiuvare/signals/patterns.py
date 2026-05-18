@@ -83,11 +83,12 @@ def check_xss(text: str) -> tuple[bool, float, str]:
 def check_path(text: str) -> tuple[bool, float, str]:
     return _scan(path_pats, text)
 
-
 def check_cmd(text: str) -> tuple[bool, float, str]:
+    # Ignore fenced markdown code blocks (```bash, ```sh, etc.)
+    if text.strip().startswith("```") and text.strip().endswith("```"):
+        return False, 0.0, ""
+
     return _scan(cmd_pats, text)
-
-
 def check_ssti(text: str) -> tuple[bool, float, str]:
     return _scan(ssti_pats, text)
 
