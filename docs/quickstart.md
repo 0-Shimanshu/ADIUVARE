@@ -6,7 +6,7 @@ the shortest path.
 
 ## 1. Install
 
-Adiuvare is installable from source. Install it directly from the repository root into your virtual environment:
+Adiuvare is installable from source. Install it directly from GitHub into your virtual environment::
 
 ```bash
 python -m pip install "git+https://github.com/0-Shimanshu/ADIUVARE.git"
