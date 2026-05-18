@@ -153,6 +153,11 @@ Current actions include:
 - unban IP
 - export JSON
 
+Unavailable actions are shown with dimmed, dashed buttons. Hover a disabled
+button for the specific reason it is blocked, and read the action-bar hint for
+selection and disconnected-mode context. The identity context pane also marks
+ready vs unavailable actions for the current row.
+
 ![Events screen](../assets/tui/events.png)
 
 ## Config

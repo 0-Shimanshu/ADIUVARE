@@ -70,6 +70,8 @@ This is an area to tighten further. The long-term goal is to make the offline
 story more explicit, either by disabling actions that cannot be applied for
 real or by giving local single-instance mode a true local mutation path.
 
+That means the TUI is strongest when attached to a running runtime.
+
 ## The TUI is still a bounded operator console
 
 The current TUI covers:
@@ -224,7 +226,7 @@ Typical cases:
 
 Examples:
 
-- "How do I write SELECT * FROM users in a tutorial?"
+- "How do I write SELECT \* FROM users in a tutorial?"
 - "How do I print <script> literally in docs?"
 
 These are not attacks, but may still produce elevated payload scores.

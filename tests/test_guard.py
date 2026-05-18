@@ -152,3 +152,42 @@ def test_route_decorators_preserve_async_handler_shape():
             assert await wrapped() == "ok"
 
     asyncio.run(run())
+
+
+def test_route_decorators_preserve_sync_handler_shape():
+    guard = Guard.__new__(Guard)
+    guard.policies = dict(BUILTIN_POLICIES)
+
+    def handler():
+        return "ok"
+
+    decorated = [
+        guard.exempt()(handler),
+        guard.protect()(handler),
+        guard.policy("admin")(handler),
+    ]
+
+    for wrapped in decorated:
+        assert inspect.iscoroutinefunction(wrapped) is False
+        assert wrapped() == "ok"
+
+
+def test_route_decorators_preserve_async_handler_shape():
+    guard = Guard.__new__(Guard)
+    guard.policies = dict(BUILTIN_POLICIES)
+
+    async def handler():
+        return "ok"
+
+    decorated = [
+        guard.exempt()(handler),
+        guard.protect()(handler),
+        guard.policy("admin")(handler),
+    ]
+
+    async def run():
+        for wrapped in decorated:
+            assert inspect.iscoroutinefunction(wrapped) is True
+            assert await wrapped() == "ok"
+
+    asyncio.run(run())

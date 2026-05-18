@@ -175,3 +175,54 @@ def test_flask_route_cfg_can_skip_trackB():
         headers={"User-Agent": "curl/8.0", "x-user-id": "u6"},
     )
     assert res.status_code == 200
+
+
+def test_flask_exempt_decorator_preserves_sync_route_handler():
+    app = Flask(__name__)
+    guard = Guard()
+    guard.use(app, framework="flask")
+
+    @app.get("/health")
+    @guard.exempt()
+    def health():
+        return jsonify(ok=True)
+
+    client = app.test_client()
+    res = client.get("/health", headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u92"})
+
+    assert res.status_code == 200
+    assert res.get_json() == {"ok": True}
+
+
+def test_flask_protect_decorator_preserves_sync_route_handler():
+    app = Flask(__name__)
+    guard = Guard()
+    guard.use(app, framework="flask")
+
+    @app.get("/profile")
+    @guard.protect(sensitivity="critical", trackB=False)
+    def profile():
+        return jsonify(ok=True)
+
+    client = app.test_client()
+    res = client.get("/profile", headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u93"})
+
+    assert res.status_code == 200
+    assert res.get_json() == {"ok": True}
+
+
+def test_flask_policy_decorator_preserves_sync_route_handler():
+    app = Flask(__name__)
+    guard = Guard()
+    guard.use(app, framework="flask")
+
+    @app.get("/admin")
+    @guard.policy("admin", trackB=False)
+    def admin():
+        return jsonify(ok=True)
+
+    client = app.test_client()
+    res = client.get("/admin", headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u94"})
+
+    assert res.status_code == 200
+    assert res.get_json() == {"ok": True}

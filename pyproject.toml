@@ -53,6 +53,7 @@ include = ["adiuvare*"]
 [tool.setuptools.package-data]
 adiuvare = [
   "state/schema.sql",
+  "tui/*.tcss",
   "vendor/*.dll",
   "vendor/*.so",
   "vendor/*.dylib",
