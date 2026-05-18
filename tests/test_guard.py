@@ -1,4 +1,7 @@
+<<<<<<< ours
 <<<<<<< HEAD
+=======
+>>>>>>> theirs
 import asyncio
 import inspect
 
@@ -83,6 +86,7 @@ def test_guard_check_uses_route_cfg():
             "u1",
             payload="select * from users where id = '' or 1=1",
             context={"path": "/sdk", "route_cfg": {"trackB": False, "sensitivity": "critical"}},
+<<<<<<< ours
         )
         assert gate.passed is True
         assert event is None
@@ -273,26 +277,75 @@ def test_route_decorators_preserve_async_handler_shape():
         gate, event = guard.check_sync(
             "u4",
             payload="$(cat /etc/passwd)",
+=======
+>>>>>>> theirs
         )
         assert gate.passed is True
-        assert event is not None
-        assert event.score > 0.0
-    
-    
-    def test_route_decorators_preserve_sync_handler_shape():
-        guard = Guard.__new__(Guard)
-        guard.policies = dict(BUILTIN_POLICIES)
-    
-        def handler():
-            return "ok"
-    
-        decorated = [
-            guard.exempt()(handler),
-            guard.protect()(handler),
-            guard.policy("admin")(handler),
-        ]
-    
+        assert event is None
+
+    asyncio.run(run())
+
+
+def test_guard_check_sync_returns_event():
+    guard = Guard()
+    gate, event = guard.check_sync("u2", payload="hello")
+    assert gate.passed is True
+    assert event is not None
+
+
+def test_guard_check_detects_shell_probe_via_pipe():
+    guard = Guard()
+    gate, event = guard.check_sync("u3", payload="search | bash")
+    assert gate.passed is True
+    assert event is not None
+    assert event.score > 0.0
+
+
+def test_guard_check_detects_etc_passwd_probe():
+    guard = Guard()
+    gate, event = guard.check_sync(
+        "u4",
+        payload="$(cat /etc/passwd)",
+    )
+    assert gate.passed is True
+    assert event is not None
+    assert event.score > 0.0
+
+
+def test_route_decorators_preserve_sync_handler_shape():
+    guard = Guard.__new__(Guard)
+    guard.policies = dict(BUILTIN_POLICIES)
+
+    def handler():
+        return "ok"
+
+    decorated = [
+        guard.exempt()(handler),
+        guard.protect()(handler),
+        guard.policy("admin")(handler),
+    ]
+
+    for wrapped in decorated:
+        assert inspect.iscoroutinefunction(wrapped) is False
+        assert wrapped() == "ok"
+
+
+def test_route_decorators_preserve_async_handler_shape():
+    guard = Guard.__new__(Guard)
+    guard.policies = dict(BUILTIN_POLICIES)
+
+    async def handler():
+        return "ok"
+
+    decorated = [
+        guard.exempt()(handler),
+        guard.protect()(handler),
+        guard.policy("admin")(handler),
+    ]
+
+    async def run():
         for wrapped in decorated:
+<<<<<<< ours
             assert inspect.iscoroutinefunction(wrapped) is False
             assert wrapped() == "ok"
     
@@ -317,3 +370,9 @@ def test_route_decorators_preserve_async_handler_shape():
     
         asyncio.run(run())
 >>>>>>> 81d2786 (test: align passwd probe test with new patterns)
+=======
+            assert inspect.iscoroutinefunction(wrapped) is True
+            assert await wrapped() == "ok"
+
+    asyncio.run(run())
+>>>>>>> theirs
