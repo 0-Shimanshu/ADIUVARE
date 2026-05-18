@@ -213,6 +213,36 @@ def test_payload_keeps_union_phrase_clean():
     res = asyncio.run(PayloadSignal().extract(ctx))
     assert res.score == 0.0
 
+def test_payload_keeps_discussion_style_select_example_lower():
+    ctx = RequestContext(
+        identity="u1",
+        payload="How do I write SELECT * FROM users in a tutorial?",
+        url="/docs",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/docs",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score < 0.7
+
+
+def test_payload_still_flags_real_sqli_attempt():
+    ctx = RequestContext(
+        identity="u1",
+        payload='SELECT * FROM users WHERE id = "" OR 1=1 --',
+        url="/login",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/login",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+
+    assert res.score >= 0.7
+    
 
 def test_payload_marks_drop_table_text():
     ctx = RequestContext(

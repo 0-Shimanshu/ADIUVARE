@@ -1,4 +1,5 @@
 import asyncio
+import threading
 import time
 from pathlib import Path
 
@@ -301,3 +302,166 @@ def test_fastapi_route_ai_mode_override_is_used():
         headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u9"},
     )
     assert res.status_code == 403
+
+
+def _capture_fastapi_payload(monkeypatch, guard, client_call_func) -> str | None:
+    captured = None
+    done = threading.Event()
+
+    async def fake_trackB(ctx):
+        nonlocal captured
+        captured = ctx.payload
+        done.set()
+        return None
+
+    monkeypatch.setattr(guard._pipeline, "trackB", fake_trackB)
+    client_call_func()
+    done.wait(timeout=1.0)
+    return captured
+
+
+def test_fastapi_payload_merging_exact_shape(monkeypatch):
+    app = FastAPI()
+    guard = Guard()
+    guard.use(app, framework="fastapi")
+
+    @app.post("/merge")
+    async def merge_endpoint():
+        return {"ok": True}
+
+    client = TestClient(app)
+    body = '{"body_key": "body_val", "name": "body_name"}'
+
+    payload = _capture_fastapi_payload(
+        monkeypatch, guard,
+        lambda: client.post(
+            "/merge?tag=a&tag=b&empty=&name=query_name",
+            content=body,
+            headers={"x-user-id": "u1", "Content-Type": "application/json"},
+        ),
+    )
+
+    assert payload == body + "\n" + "a b  query_name"
+
+
+def test_fastapi_payload_raw_body(monkeypatch):
+    app = FastAPI()
+    guard = Guard()
+    guard.use(app, framework="fastapi")
+
+    @app.post("/raw")
+    async def raw_endpoint():
+        return {"ok": True}
+
+    client = TestClient(app)
+    sql_payload = "select * from users where id = '' or 1=1"
+
+    payload = _capture_fastapi_payload(
+        monkeypatch, guard,
+        lambda: client.post(
+            "/raw",
+            content=sql_payload,
+            headers={"x-user-id": "u1", "Content-Type": "text/plain"},
+        ),
+    )
+
+    assert payload == sql_payload
+
+
+def test_fastapi_payload_query_only(monkeypatch):
+    app = FastAPI()
+    guard = Guard()
+    guard.use(app, framework="fastapi")
+
+    @app.get("/items")
+    async def items_endpoint():
+        return {"ok": True}
+
+    client = TestClient(app)
+
+    payload = _capture_fastapi_payload(
+        monkeypatch, guard,
+        lambda: client.get(
+            "/items?status=active&limit=10",
+            headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u1"},
+        ),
+    )
+
+    assert payload == "active 10"
+
+
+def test_fastapi_payload_encoded_query_normalization(monkeypatch):
+    app = FastAPI()
+    guard = Guard()
+    guard.use(app, framework="fastapi")
+
+    @app.get("/search")
+    async def search_endpoint():
+        return {"ok": True}
+
+    client = TestClient(app)
+
+    payload = _capture_fastapi_payload(
+        monkeypatch, guard,
+        lambda: client.get(
+            "/search?name=hello%27world&city=New%20York",
+            headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u1"},
+        ),
+    )
+
+    assert payload == "hello'world New York"
+
+
+def test_fastapi_payload_blank_query_omission(monkeypatch):
+    app = FastAPI()
+    guard = Guard()
+    guard.use(app, framework="fastapi")
+
+    @app.post("/raw")
+    async def raw_endpoint():
+        return {"ok": True}
+
+    client = TestClient(app)
+    body = "select * from users where id = '' or 1=1"
+
+    payload_a = _capture_fastapi_payload(
+        monkeypatch, guard,
+        lambda: client.post(
+            "/raw",
+            content=body,
+            headers={"x-user-id": "u1", "Content-Type": "text/plain"},
+        ),
+    )
+    assert payload_a == body
+
+    payload_b = _capture_fastapi_payload(
+        monkeypatch, guard,
+        lambda: client.post(
+            "/raw?a=&b=",
+            content=body,
+            headers={"x-user-id": "u1", "Content-Type": "text/plain"},
+        ),
+    )
+    assert payload_b == body
+
+
+def test_fastapi_payload_bare_request(monkeypatch):
+    app = FastAPI()
+    guard = Guard()
+    guard.use(app, framework="fastapi")
+
+    @app.get("/ping")
+    async def ping():
+        return {"ok": True}
+
+    client = TestClient(app)
+
+    payload = _capture_fastapi_payload(
+        monkeypatch, guard,
+        lambda: client.get(
+            "/ping",
+            headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u1"},
+        ),
+    )
+
+    assert payload is None
