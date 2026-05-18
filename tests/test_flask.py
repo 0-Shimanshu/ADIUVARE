@@ -262,7 +262,6 @@ def test_flask_payload_query_only(monkeypatch):
 
 
 def test_flask_payload_encoded_query_normalization(monkeypatch):
-def test_flask_exempt_decorator_preserves_sync_route_handler():
     app = Flask(__name__)
     guard = Guard()
     guard.use(app, framework="flask")
@@ -285,19 +284,6 @@ def test_flask_exempt_decorator_preserves_sync_route_handler():
 
 
 def test_flask_payload_blank_query_omission(monkeypatch):
-    @app.get("/health")
-    @guard.exempt()
-    def health():
-        return jsonify(ok=True)
-
-    client = app.test_client()
-    res = client.get("/health", headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u92"})
-
-    assert res.status_code == 200
-    assert res.get_json() == {"ok": True}
-
-
-def test_flask_protect_decorator_preserves_sync_route_handler():
     app = Flask(__name__)
     guard = Guard()
     guard.use(app, framework="flask")
@@ -333,19 +319,6 @@ def test_flask_protect_decorator_preserves_sync_route_handler():
 
 
 def test_flask_payload_bare_request(monkeypatch):
-    @app.get("/profile")
-    @guard.protect(sensitivity="critical", trackB=False)
-    def profile():
-        return jsonify(ok=True)
-
-    client = app.test_client()
-    res = client.get("/profile", headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u93"})
-
-    assert res.status_code == 200
-    assert res.get_json() == {"ok": True}
-
-
-def test_flask_policy_decorator_preserves_sync_route_handler():
     app = Flask(__name__)
     guard = Guard()
     guard.use(app, framework="flask")
@@ -365,6 +338,47 @@ def test_flask_policy_decorator_preserves_sync_route_handler():
     )
 
     assert payload is None
+
+
+def test_flask_exempt_decorator_preserves_sync_route_handler():
+    app = Flask(__name__)
+    guard = Guard()
+    guard.use(app, framework="flask")
+
+    @app.get("/health")
+    @guard.exempt()
+    def health():
+        return jsonify(ok=True)
+
+    client = app.test_client()
+    res = client.get("/health", headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u92"})
+
+    assert res.status_code == 200
+    assert res.get_json() == {"ok": True}
+
+
+def test_flask_protect_decorator_preserves_sync_route_handler():
+    app = Flask(__name__)
+    guard = Guard()
+    guard.use(app, framework="flask")
+
+    @app.get("/profile")
+    @guard.protect(sensitivity="critical", trackB=False)
+    def profile():
+        return jsonify(ok=True)
+
+    client = app.test_client()
+    res = client.get("/profile", headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u93"})
+
+    assert res.status_code == 200
+    assert res.get_json() == {"ok": True}
+
+
+def test_flask_policy_decorator_preserves_sync_route_handler():
+    app = Flask(__name__)
+    guard = Guard()
+    guard.use(app, framework="flask")
+
     @app.get("/admin")
     @guard.policy("admin", trackB=False)
     def admin():
