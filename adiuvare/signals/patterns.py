@@ -36,7 +36,7 @@ path_pats = [
 cmd_pats = [
     (_re.compile(r"(?i)\$\(\s*(?:cat|curl|wget|bash|sh|nc|python|perl|php|ruby|rm)\b"),0.74,"cmd_subshell"),
     (_re.compile(r"(?i)(?:[;&]|\|\|?)\s*(?:cat|curl|wget|bash|sh|nc|python|perl|php|ruby|rm)\b"),0.76,"cmd_sep"),
-    (_re.compile(r"(?i)`\s*(?:cat|curl|wget|nc|python|perl|php|ruby|id|whoami)\b"), 0.74, "cmd_backtick"),
+    (_re.compile(r"(?i)`\s*(?:cat|curl|wget|bash|sh|nc|python|perl|php|ruby|id|whoami)\b"), 0.74, "cmd_backtick"),
 
     (_re.compile(r"(?i);\s*cat\s+/etc/passwd\b"),0.78,"cmd_passwd_probe"),
     (_re.compile(r"(?i)\$\(\s*cat\s+/etc/passwd\s*\)"),0.78,"cmd_subshell_passwd"),
