@@ -1,15 +1,20 @@
+import re
+
 from ..core.models import RequestContext, SignalResult
 from ..vendor import detect_sqli, detect_xss, normalize
 from .base import SoftSignal
 from .patterns import check_cmd, check_nosql, check_path, check_sql, check_ssti, check_xss
 
 
+_LDAP_PAT = re.compile(
+    r"\*\)\s*\(\s*uid\s*=\s*\*?\s*\)\s*\)\s*\(\|\s*\(\s*uid\s*="
+)
+
+
 def check_ldap(text: str) -> tuple[bool, float, str]:
     if ")(uid=" not in text and "))(|(" not in text:
         return (False, 0.0, "")
-    import re
-    _LDAP = re.compile(r"\*\)\s*\(\s*uid\s*=\s*\*?\s*\)\s*\)\s*\(\|\s*\(\s*uid\s*=")
-    if _LDAP.search(text):
+    if _LDAP_PAT.search(text):
         return (True, 0.82, "ldap_injection")
     return (False, 0.0, "")
 
@@ -37,6 +42,10 @@ class PayloadSignal(SoftSignal):
         ssti_pat = check_ssti(text)
         nosql_pat = check_nosql(text)
         ldap_pat = check_ldap(text)
+        if raw != text:
+            raw_ldap = check_ldap(raw)
+            if raw_ldap[0] and raw_ldap[1] > ldap_pat[1]:
+                ldap_pat = raw_ldap
 
         hits: list[tuple[float, str]] = []
         if sql_lib["hit"]:
