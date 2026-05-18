@@ -7,6 +7,12 @@ from textual.binding import Binding
 from textual.containers import Horizontal, HorizontalScroll, Vertical
 from textual.widgets import Button, DataTable, Input, Static
 
+from ..operator_actions import (
+    ActionAvailability,
+    apply_action_availability,
+    format_action_legend_line,
+    format_action_status,
+)
 from ..workspace import (
     PALETTE,
     WorkspaceView,
@@ -87,7 +93,7 @@ class EventsScreen(WorkspaceView):
         self._select_row(event.cursor_row)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        if not self._selected:
+        if not self._selected or event.button.disabled:
             return
         button_id = event.button.id
         if button_id == "events-confirm":
@@ -231,23 +237,44 @@ class EventsScreen(WorkspaceView):
             self._render_context()
             self._update_action_status()
 
-    def _update_action_status(self) -> None:
-        event = self._selected
+    def _action_states(self, event: dict | None) -> dict[str, ActionAvailability]:
         has = event is not None
         verdict = str(event.get("verdict", "allow")) if event else "allow"
         ip = str(event.get("ip", "") or "") if event else ""
+        has_ip = bool(ip and ip != "-")
 
-        self.query_one("#events-confirm", Button).disabled = not has or verdict == "block"
-        self.query_one("#events-whitelist", Button).disabled = not has
-        self.query_one("#events-monitor", Button).disabled = not has
-        self.query_one("#events-unmonitor", Button).disabled = not has
-        self.query_one("#events-unblock-monitor", Button).disabled = not has or verdict != "block"
-        self.query_one("#events-ban-ip", Button).disabled = not has or not ip or ip == "-"
-        self.query_one("#events-unban-ip", Button).disabled = not has or not ip or ip == "-"
-        self.query_one("#events-export", Button).disabled = not has
+        select_first = "Select an event row first"
+        return {
+            "events-confirm": ActionAvailability(
+                has and verdict != "block",
+                select_first if not has else "Already blocked",
+            ),
+            "events-whitelist": ActionAvailability(has, select_first),
+            "events-monitor": ActionAvailability(has, select_first),
+            "events-unmonitor": ActionAvailability(has, select_first),
+            "events-unblock-monitor": ActionAvailability(
+                has and verdict == "block",
+                select_first if not has else "Only for blocked events",
+            ),
+            "events-ban-ip": ActionAvailability(has and has_ip, select_first if not has else "No IP on event"),
+            "events-unban-ip": ActionAvailability(has and has_ip, select_first if not has else "No IP on event"),
+            "events-export": ActionAvailability(has, select_first),
+        }
 
+    def _update_action_status(self) -> None:
+        event = self._selected
+        states = self._action_states(event)
+
+        for button_id, state in states.items():
+            apply_action_availability(self.query_one(f"#{button_id}", Button), state)
+
+        blocked_reasons = [state.reason for state in states.values() if not state.enabled]
         self.query_one("#events-action-status", Static).update(
-            f"[{PALETTE['dim']}]Selected: {event.get('identity', '?')}[/]" if event else ""
+            format_action_status(
+                connected=self._app().connected,
+                selected_label=str(event.get("identity", "?")) if event else None,
+                blocked_reasons=blocked_reasons,
+            )
         )
 
     def _render_detail(self) -> None:
@@ -314,6 +341,7 @@ class EventsScreen(WorkspaceView):
         is_banned = ip in banned
         is_whitelisted = identity in whitelisted
 
+        states = self._action_states(event)
         lines = [
             f"[{PALETTE['dim']} bold]IDENTITY CONTEXT[/]",
             "",
@@ -325,15 +353,16 @@ class EventsScreen(WorkspaceView):
             "",
             styled_separator(),
             f"[{PALETTE['very_dim']}]AVAILABLE ACTIONS[/]",
+            f"[{PALETTE['very_dim']}]● ready  ○ unavailable (hover buttons for detail)[/]",
             "",
-            f"  [{PALETTE['cyan']}]C[/]   [{PALETTE['text']}]Confirm block[/]",
-            f"  [{PALETTE['cyan']}]W[/]   [{PALETTE['text']}]Whitelist[/]",
-            f"  [{PALETTE['cyan']}]M[/]   [{PALETTE['text']}]Monitor identity[/]",
-            f"      [{PALETTE['very_dim']}]Unmonitor identity[/]",
-            f"      [{PALETTE['very_dim']}]Unblock + monitor[/]",
-            f"      [{PALETTE['very_dim']}]Ban IP[/]",
-            f"      [{PALETTE['very_dim']}]Unban IP[/]",
-            f"  [{PALETTE['cyan']}]E[/]   [{PALETTE['text']}]Export JSON[/]",
+            format_action_legend_line("Confirm block", states["events-confirm"], "C"),
+            format_action_legend_line("Whitelist", states["events-whitelist"], "W"),
+            format_action_legend_line("Monitor identity", states["events-monitor"], "M"),
+            format_action_legend_line("Unmonitor identity", states["events-unmonitor"]),
+            format_action_legend_line("Unblock + monitor", states["events-unblock-monitor"]),
+            format_action_legend_line("Ban IP", states["events-ban-ip"]),
+            format_action_legend_line("Unban IP", states["events-unban-ip"]),
+            format_action_legend_line("Export JSON", states["events-export"], "E"),
         ]
         panel.update("\n".join(lines))
 

@@ -97,6 +97,20 @@ Current command names include:
 The CLI and TUI use these under the hood. For normal use, treat them as
 implementation details behind the supported operator surface.
 
+## Connected vs disconnected operator experience
+
+When the stream is reachable, the TUI receives live event rows, runtime
+snapshots, and command acknowledgements over the socket. When it is not
+reachable, the TUI falls back to local cache and audit data.
+
+If the socket drops mid-session, the footer shows `stream link dropped`. The
+TUI does not exit or reconnect automatically. Restart `adv` to re-establish
+the stream.
+
+For the full operator-facing explanation of which screens work offline, which
+actions require a live runtime, and how the UI signals connection state, see
+[TUI](tui.md).
+
 ## Connected status example
 
 ```bash

@@ -34,8 +34,9 @@ path_pats = [
 ]
 
 cmd_pats = [
-    (_re.compile(r"(?i)\$\(\s*(?:cat|curl|wget|bash|sh|nc|python|perl|php|ruby)\b"),0.74,"cmd_subshell"),
-    (_re.compile(r"(?i)[;&]\s*(?:cat|curl|wget|bash|sh|nc|python|perl|php|ruby)\b"),0.76,"cmd_sep"),
+    (_re.compile(r"(?i)\$\(\s*(?:cat|curl|wget|bash|sh|nc|python|perl|php|ruby|rm)\b"),0.74,"cmd_subshell"),
+    (_re.compile(r"(?i)(?:[;&]|\|\|?)\s*(?:cat|curl|wget|bash|sh|nc|python|perl|php|ruby|rm)\b"),0.76,"cmd_sep"),
+    (_re.compile(r"(?i)`\s*(?:cat|curl|wget|bash|sh|nc|python|perl|php|ruby|id|whoami)\b"),0.74,"cmd_backtick"),
 ]
 
 ssti_pats = [

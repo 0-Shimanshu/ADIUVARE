@@ -46,6 +46,9 @@ The host app stays synchronous, but the middleware still:
 Flask also uses the thread-safe identity-store path internally, which matters
 in a WSGI environment.
 
+Route decorators preserve the original Flask view shape. Normal synchronous
+Flask views stay synchronous, while async views stay async.
+
 ## Route helpers
 
 Built-in policy:
@@ -76,6 +79,15 @@ Exempt route:
 @app.get("/health")
 @guard.exempt()
 def health():
+    return {"ok": True}
+```
+
+Async views are supported too when your Flask app is configured for them:
+
+```python
+@app.get("/status")
+@guard.exempt()
+async def status():
     return {"ok": True}
 ```
 

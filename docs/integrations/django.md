@@ -7,6 +7,38 @@ and direct block or throttle outcomes.
 Use the explicit Django attach path here. `Guard.auto(...)` is not the right
 shortcut for Django at the moment.
 
+## Working example
+
+A maintained Django demo is available here:
+
+```text
+examples/multi-framework-demo/django_demo/
+```
+
+This is a real Django app you can run locally. It is useful if you want to see
+how Adiuvare is wired into Django end-to-end, not just read API-level docs.
+
+The demo covers:
+
+- public/exempt route
+- protected route with verdict and score in the response
+- scored review route that reads a JSON body
+- suspicious payload route that demonstrates flagging
+- route-level `guard.configure_routes(...)` usage
+- request and output verification using curl
+
+To run it:
+
+```bash
+cd examples/multi-framework-demo/django_demo
+python -m pip install -r requirements.txt
+python manage.py check
+python manage.py runserver 127.0.0.1:8000
+```
+
+The demo README and `ROUTE_VERIFICATION.md` have full curl commands and
+expected outputs for every route.
+
 ## Quick example
 
 ```python
@@ -22,6 +54,13 @@ def adiuvare_middleware(get_response):
 
 Add that wrapper to your Django middleware stack where you want request
 inspection to happen.
+
+```python
+# settings.py
+MIDDLEWARE = [
+    "myapp.middleware.adiuvare_middleware",
+]
+```
 
 ## What the adapter reads
 
@@ -62,14 +101,38 @@ The cleanest current path in Django is programmatic route config.
 guard.configure_routes(
     {
         "/health": {"exempt": True},
-        "/admin/login": {"policy": "admin"},
-        "/search": {"policy": "search"},
+        "/public/": {"exempt": True},
+        "/admin/login": {
+            "policy": "admin",
+            "sensitivity": "critical",
+            "trackB": True,
+        },
+        "/search": {
+            "policy": "search",
+            "sensitivity": "internal",
+            "trackB": True,
+        },
     }
 )
 ```
 
 That keeps route posture easy to reason about even when your Django URL and
 view shape does not make decorators the best control point.
+
+## Accessing the Adiuvare event in a view
+
+After inspection, the middleware attaches the event to the request object:
+
+```python
+def my_view(request):
+    event = getattr(request, "adiuvare_event", None)
+    return JsonResponse(
+        {
+            "verdict": getattr(event, "verdict", None),
+            "score": getattr(event, "score", None),
+        }
+    )
+```
 
 ## Query and body scanning
 
@@ -88,9 +151,8 @@ adv
 Typical connected status:
 
 ```text
-config: H:\ADIUVARE\adiuvare.yaml
+config: /my-api/adiuvare.yaml
 runtime: connected
-socket: C:\Users\me\AppData\Local\Temp\adiuvare.sock
 backend: sqlite
 framework: django
 instances: single
@@ -114,6 +176,8 @@ visibility.
 
 ## Related
 
+- [Working demo](../../examples/multi-framework-demo/django_demo/README.md)
+- [Route verification](../../examples/multi-framework-demo/django_demo/ROUTE_VERIFICATION.md)
 - [Configuration](../configuration.md)
 - [Route policies](../extending/route-policies.md)
 - [Guard API](../api/guard.md)

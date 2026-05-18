@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+import inspect
 from dataclasses import replace
 from pathlib import Path
 from typing import Any
@@ -34,6 +35,21 @@ from .state.persistence import (
     start_checkpoint_loop,
 )
 from .state.whitelist import WhitelistStore
+
+
+def _wrap_route_handler(fn):
+    if inspect.iscoroutinefunction(fn):
+        @wraps(fn)
+        async def async_wrap(*args, **kwargs):
+            return await fn(*args, **kwargs)
+
+        return async_wrap
+
+    @wraps(fn)
+    def sync_wrap(*args, **kwargs):
+        return fn(*args, **kwargs)
+
+    return sync_wrap
 
 
 class Guard:
@@ -506,10 +522,7 @@ class Guard:
                 "sink_mode": sink_mode,
             }
 
-            @wraps(fn)
-            async def wrap(*args, **kwargs):
-                return await fn(*args, **kwargs)
-
+            wrap = _wrap_route_handler(fn)
             wrap._adiuvare_cfg = cfg
             return wrap
 
@@ -519,10 +532,7 @@ class Guard:
         """Mark a route as exempt from Adiuvare request inspection."""
 
         def deco(fn):
-            @wraps(fn)
-            async def wrap(*args, **kwargs):
-                return await fn(*args, **kwargs)
-
+            wrap = _wrap_route_handler(fn)
             wrap._adiuvare_exempt = True
             return wrap
 

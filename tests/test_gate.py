@@ -98,3 +98,32 @@ def test_gate_blocks_banned_ip():
     assert res.passed is False
     assert res.block_reason == "banned_ip"
     configure_trackA(wl=None, hard_sigs=[])
+
+
+def test_gate_blocks_decoy_prefix_path():
+    ctx = make_ctx()
+    ctx.endpoint = "/_decoy/trap"
+    res = run_trackA(ctx, IdentityStore())
+    assert res.passed is False
+    assert res.status_code == 403
+    assert res.block_reason == "decoy_path"
+
+
+def test_gate_allows_clean_post_to_regular_endpoint():
+    ctx = make_ctx()
+    ctx.method = "POST"
+    ctx.endpoint = "/api/data"
+    res = run_trackA(ctx, IdentityStore())
+    assert res.passed is True
+
+
+def test_gate_tracks_rate_limit_independently_per_identity():
+    store = IdentityStore()
+    ctx_u1 = make_ctx("u1")
+    for _ in range(201):
+        run_trackA(ctx_u1, store)
+    assert store.is_blocked("u1") is True
+
+    ctx_u2 = make_ctx("u2")
+    res = run_trackA(ctx_u2, store)
+    assert res.passed is True

@@ -119,6 +119,44 @@ def test_flask_body_sqli_does_not_stay_open():
     assert res.status_code in {403, 429}
 
 
+def test_flask_drop_table_body_is_blocked():
+    app = Flask(__name__)
+    guard = Guard()
+    guard.use(app, framework="flask")
+
+    @app.post("/billing")
+    def billing():
+        return jsonify(ok=True)
+
+    client = app.test_client()
+    res = client.post(
+        "/billing",
+        data=b"DROP TABLE users",
+        content_type="text/plain",
+        headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u90"},
+    )
+    assert res.status_code in {403, 429}
+
+
+def test_flask_clean_post_body_is_allowed():
+    app = Flask(__name__)
+    guard = Guard()
+    guard.use(app, framework="flask")
+
+    @app.post("/submit")
+    def submit():
+        return jsonify(ok=True)
+
+    client = app.test_client()
+    res = client.post(
+        "/submit",
+        data=b"name=Alice&message=hello+world",
+        content_type="text/plain",
+        headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u91"},
+    )
+    assert res.status_code == 200
+
+
 def test_flask_route_cfg_can_skip_trackB():
     app = Flask(__name__)
     guard = Guard()
@@ -224,6 +262,7 @@ def test_flask_payload_query_only(monkeypatch):
 
 
 def test_flask_payload_encoded_query_normalization(monkeypatch):
+def test_flask_exempt_decorator_preserves_sync_route_handler():
     app = Flask(__name__)
     guard = Guard()
     guard.use(app, framework="flask")
@@ -246,6 +285,19 @@ def test_flask_payload_encoded_query_normalization(monkeypatch):
 
 
 def test_flask_payload_blank_query_omission(monkeypatch):
+    @app.get("/health")
+    @guard.exempt()
+    def health():
+        return jsonify(ok=True)
+
+    client = app.test_client()
+    res = client.get("/health", headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u92"})
+
+    assert res.status_code == 200
+    assert res.get_json() == {"ok": True}
+
+
+def test_flask_protect_decorator_preserves_sync_route_handler():
     app = Flask(__name__)
     guard = Guard()
     guard.use(app, framework="flask")
@@ -281,6 +333,19 @@ def test_flask_payload_blank_query_omission(monkeypatch):
 
 
 def test_flask_payload_bare_request(monkeypatch):
+    @app.get("/profile")
+    @guard.protect(sensitivity="critical", trackB=False)
+    def profile():
+        return jsonify(ok=True)
+
+    client = app.test_client()
+    res = client.get("/profile", headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u93"})
+
+    assert res.status_code == 200
+    assert res.get_json() == {"ok": True}
+
+
+def test_flask_policy_decorator_preserves_sync_route_handler():
     app = Flask(__name__)
     guard = Guard()
     guard.use(app, framework="flask")
@@ -300,3 +365,13 @@ def test_flask_payload_bare_request(monkeypatch):
     )
 
     assert payload is None
+    @app.get("/admin")
+    @guard.policy("admin", trackB=False)
+    def admin():
+        return jsonify(ok=True)
+
+    client = app.test_client()
+    res = client.get("/admin", headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u94"})
+
+    assert res.status_code == 200
+    assert res.get_json() == {"ok": True}
