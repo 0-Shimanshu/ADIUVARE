@@ -149,8 +149,6 @@ class AuditScreen(WorkspaceView):
             ip = str(row.get("ip", "-") or "-")[:15]
             age = str(row.get("age", "-"))
             dominant = str(row.get("dominant", "-"))
-            icon = decision_icon(verdict)
-            color = decision_color(verdict)
 
             table.add_row(
                 Text(age, style=PALETTE["dim"]),
@@ -232,7 +230,6 @@ class AuditScreen(WorkspaceView):
 
         event = self._selected
         verdict = str(event.get("verdict", "allow"))
-        verdict_color = decision_color(verdict)
         score = float(event.get("score", 0))
         detail = event.get("detail") or {}
         breakdown = event.get("breakdown") or {}
