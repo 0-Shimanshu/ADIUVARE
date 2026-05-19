@@ -203,8 +203,7 @@ class EventsScreen(WorkspaceView):
             ip = str(row.get("ip", "-") or "-")[:15]
             dominant = str(row.get("dominant", "-"))
             age = str(row.get("age", "-"))
-            icon = decision_icon(verdict)
-            color = decision_color(verdict)
+           
             table.add_row(
                 Text(render_decision_badge(verdict), style="bold"),
                 Text(f"{score:.4f}", style=PALETTE["cyan"]),
@@ -260,7 +259,6 @@ class EventsScreen(WorkspaceView):
         event = self._selected
         verdict = str(event.get("verdict", "allow"))
         score = float(event.get("score", 0))
-        verdict_color = decision_color(verdict)
         breakdown = event.get("breakdown") or {}
         detail = event.get("detail") or {}
 
