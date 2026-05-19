@@ -263,6 +263,17 @@ async def test_events_filter_reduces_rows(app):
 
 
 @pytest.mark.asyncio
+async def test_events_screen_layout_has_sidebar_sections(app):
+    async with app.run_test() as pilot:
+        await pilot.press("2")
+        assert app.query_one("#events-header-notice", Static)
+        assert app.query_one("#events-body")
+        assert app.query_one("#events-right-col")
+        assert app.query_one("#events-detail-panel", Static)
+        assert app.query_one("#events-context-panel", Static)
+
+
+@pytest.mark.asyncio
 async def test_events_disabled_actions_show_reasons(app):
     app.audit.write(
         AdiuvareEvent(
