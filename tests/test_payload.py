@@ -435,6 +435,8 @@ def test_payload_keeps_nosql_operator_docs_clean():
 
     res = asyncio.run(PayloadSignal().extract(ctx))
     assert res.score == 0.0
+
+
 def test_payload_keeps_nosql_regex_docs_clean():
     ctx = RequestContext(
         identity="u1",
