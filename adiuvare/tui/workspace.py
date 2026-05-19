@@ -100,6 +100,7 @@ def decision_color(verdict: str) -> str:
 
 def decision_icon(verdict: str) -> str:
     return DECISION_ICONS.get(verdict, "?")
+    
 def decision_label(verdict: str) -> str:
     return verdict.upper()
 
