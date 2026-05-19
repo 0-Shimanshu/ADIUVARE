@@ -286,12 +286,21 @@ Scrollbar {
     layout: vertical;
 }
 
+#events-header-notice {
+    height: auto;
+    max-height: 2;
+    padding: 0 2;
+    background: #0d1117;
+    border-bottom: solid #21262d;
+}
+
 #events-filter-bar {
     height: auto;
     background: #0d1117;
     padding: 0 2;
     layout: horizontal;
     align: left middle;
+    border-bottom: solid #21262d;
 }
 
 #events-filter-label {
@@ -311,21 +320,28 @@ Scrollbar {
     content-align: right middle;
 }
 
+#events-body {
+    height: 1fr;
+    layout: horizontal;
+}
+
 #events-table {
-    height: 40%;
+    width: 1fr;
+    height: 1fr;
     border: solid #21262d;
     background: #161b22;
 }
 
-#events-detail-area {
+#events-right-col {
+    width: 42%;
+    min-width: 44;
     height: 1fr;
-    min-height: 12;
-    layout: horizontal;
-    overflow-y: auto;
+    background: #0d1117;
+    border-left: solid #21262d;
 }
 
 #events-detail-panel {
-    width: 60%;
+    height: 1fr;
     border: solid #21262d;
     background: #161b22;
     padding: 1 2;
@@ -333,7 +349,7 @@ Scrollbar {
 }
 
 #events-context-panel {
-    width: 40%;
+    height: 1fr;
     border: solid #21262d;
     background: #161b22;
     padding: 1 2;

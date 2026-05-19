@@ -49,25 +49,31 @@ class EventsScreen(WorkspaceView):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="events-outer"):
+            yield Static(
+                f"[{PALETTE['cyan']}]EVENTS[/]  "
+                f"[{PALETTE['dim']}]Review queue for non-allow events (select a row to inspect + act)[/]",
+                id="events-header-notice",
+            )
             with Horizontal(id="events-filter-bar"):
                 yield Static(f"[{PALETTE['very_dim']}]FILTER[/]", id="events-filter-label")
                 yield Input(placeholder="identity", id="events-identity-filter")
                 yield Input(placeholder="flag / throttle / block", id="events-verdict-filter")
                 yield Static("", id="events-filter-stats")
-            yield DataTable(id="events-table")
-            with Horizontal(id="events-detail-area"):
-                yield Static("", id="events-detail-panel")
-                yield Static("", id="events-context-panel")
-            with HorizontalScroll(id="events-action-bar"):
-                yield Button("Confirm Block", id="events-confirm", classes="confirm")
-                yield Button("Whitelist", id="events-whitelist", classes="success")
-                yield Button("Monitor", id="events-monitor", classes="warning")
-                yield Button("Unmonitor", id="events-unmonitor", classes="outline")
-                yield Button("Unblock+Monitor", id="events-unblock-monitor", classes="warning")
-                yield Button("Ban IP", id="events-ban-ip", classes="confirm")
-                yield Button("Unban IP", id="events-unban-ip", classes="outline")
-                yield Button("Export JSON", id="events-export", classes="danger")
-                yield Static("", id="events-action-status")
+            with Horizontal(id="events-body"):
+                yield DataTable(id="events-table")
+                with Vertical(id="events-right-col"):
+                    yield Static("", id="events-detail-panel")
+                    yield Static("", id="events-context-panel")
+                    with HorizontalScroll(id="events-action-bar"):
+                        yield Button("Confirm Block", id="events-confirm", classes="confirm")
+                        yield Button("Whitelist", id="events-whitelist", classes="success")
+                        yield Button("Monitor", id="events-monitor", classes="warning")
+                        yield Button("Unmonitor", id="events-unmonitor", classes="outline")
+                        yield Button("Unblock+Monitor", id="events-unblock-monitor", classes="warning")
+                        yield Button("Ban IP", id="events-ban-ip", classes="confirm")
+                        yield Button("Unban IP", id="events-unban-ip", classes="outline")
+                        yield Button("Export JSON", id="events-export", classes="danger")
+                        yield Static("", id="events-action-status")
 
     def on_mount(self) -> None:
         table = self.query_one("#events-table", DataTable)
