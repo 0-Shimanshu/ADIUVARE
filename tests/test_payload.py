@@ -407,6 +407,8 @@ def test_payload_keeps_pipe_filter_param_clean():
 
     res = asyncio.run(PayloadSignal().extract(ctx))
     assert res.score == 0.0
+
+    
 def test_payload_marks_top_level_nosql_operator_text():
     ctx = RequestContext(
         identity="u1",
