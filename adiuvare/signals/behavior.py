@@ -23,7 +23,7 @@ class BehaviorSignal(SoftSignal):
         self._id_store = id_store
 
     def score_trackA(self, identity: str) -> float:
-        seen = self._id_store.bump(identity)
+        seen = self._id_store.get(identity).seen
         if seen > max(25, trackA_cap() // 8):
             return 0.55
         return 0.0
