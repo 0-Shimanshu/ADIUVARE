@@ -10,8 +10,6 @@ from textual.widgets import Button, DataTable, Input, Static
 from ..workspace import (
     PALETTE,
     WorkspaceView,
-    decision_color,
-    decision_icon,
     dominant_color,
     render_score_bar,
     render_signal_bar,
