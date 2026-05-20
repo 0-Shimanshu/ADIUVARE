@@ -30,6 +30,15 @@ guard.configure_routes(
             "policy": "custom_profile",
             "sensitivity": "critical",
             "trackB": True,
+        },
+        "/api/v1/global-policy-override/": {
+            "policy": "search",
+            "sensitivity": "public",
+            "trackB": False,
+        },
+        "/api/v1/global-protect-override/": {
+            "sensitivity": "internal",
+            "trackB": False,
         }
     }
 )
@@ -120,6 +129,40 @@ async def self_described_signal_route(payload: AdvancedPayload, request: Request
         "self_described_internal_risk": calculated_risk,
         "final_adiuvare_verdict": getattr(event, "verdict", "allow") if event else "allow",
         "final_adiuvare_score": getattr(event, "score", calculated_risk) if event else calculated_risk
+    }
+
+# CASE C: Endpoint Overriding Global Policy with @guard.policy
+@app.get("/api/v1/global-policy-override/")
+@guard.policy("admin", sensitivity="critical", trackB=True)
+async def global_policy_override_route(request: Request):
+    """
+    Demonstrates overriding a global configuration with a decorator-based policy.
+    The global config sets policy to 'search' (public, no trackB), but this decorator
+    elevates it to 'admin' (critical, trackB=True).
+    """
+    event = getattr(request.state, "adiuvare_event", None)
+    return {
+        "route": "global-policy-override",
+        "message": "Overrode global policy using @guard.policy decorator.",
+        "verdict": getattr(event, "verdict", None) if event else "allow",
+        "score": getattr(event, "score", None) if event else 0.0,
+    }
+
+# CASE D: Endpoint Overriding Global Config with @guard.protect
+@app.get("/api/v1/global-protect-override/")
+@guard.protect(sensitivity="critical", trackB=True)
+async def global_protect_override_route(request: Request):
+    """
+    Demonstrates overriding a global configuration with a decorator-based protect rule.
+    The global config sets sensitivity to 'internal' and trackB to False, but this decorator
+    elevates it to sensitivity 'critical' and trackB to True.
+    """
+    event = getattr(request.state, "adiuvare_event", None)
+    return {
+        "route": "global-protect-override",
+        "message": "Overrode global protect rule using @guard.protect decorator.",
+        "verdict": getattr(event, "verdict", None) if event else "allow",
+        "score": getattr(event, "score", None) if event else 0.0,
     }
 
 if __name__ == "__main__":

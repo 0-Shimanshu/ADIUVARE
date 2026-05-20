@@ -18,6 +18,9 @@ The [central docs page](../../../docs/integrations/fastapi.md) links here.
 | `/hard-stop/` | POST | Suspicious payload route | Demonstrates flagged malicious-looking input |
 | `/api/v1/explicit-exempt/` | GET | Per-endpoint control | Explicit override using inline `@guard.exempt()` decorator |
 | `/api/v1/advanced-policy/` | POST | Self-described signal | Business rules alter active tracking wrapper variables |
+| `/api/v1/global-policy-override/` | GET | Policy override | Global policy overridden with inline `@guard.policy("admin")` |
+| `/api/v1/global-protect-override/` | GET | Protect override | Global config overridden with inline `@guard.protect(sensitivity="critical")` |
+
 
 ## Setup
 
@@ -158,6 +161,44 @@ Expected Response Body:
 ```
 
 The logic block intercepts the payload parameters, evaluates custom threat conditions internally, and seamlessly mutates the active `request.state.adiuvare_event` variable state inside the execution frame, elevating the output to a "flag" condition.
+
+### 7. Global Policy Override
+
+```bash
+curl -i http://127.0.0.1:8000/api/v1/global-policy-override/
+```
+
+Expected Response Body:
+
+```json
+{
+  "route": "global-policy-override",
+  "message": "Overrode global policy using @guard.policy decorator.",
+  "verdict": "allow",
+  "score": 0.09487499999999999
+}
+```
+
+The global configuration maps `/api/v1/global-policy-override/` to the public `search` policy which has Track B disabled by default. However, the `@guard.policy("admin", sensitivity="critical", trackB=True)` decorator overrides the configuration and forces critical Track B inspection.
+
+### 8. Global Protect Override
+
+```bash
+curl -i http://127.0.0.1:8000/api/v1/global-protect-override/
+```
+
+Expected Response Body:
+
+```json
+{
+  "route": "global-protect-override",
+  "message": "Overrode global protect rule using @guard.protect decorator.",
+  "verdict": "allow",
+  "score": 0.09487499999999999
+}
+```
+
+The global configuration maps `/api/v1/global-protect-override/` to an internal setting with Track B disabled (`trackB: False`). The `@guard.protect(sensitivity="critical", trackB=True)` decorator overrides this configuration, promoting the sensitivity level and enabling Track B.
 
 ## Config note
 

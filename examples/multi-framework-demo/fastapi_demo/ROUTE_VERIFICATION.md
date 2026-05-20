@@ -183,6 +183,62 @@ content-type: application/json
 
 ---
 
+### 7. Global Policy Override (Decorator Priority)
+
+Command:
+
+```bash
+curl -i http://127.0.0.1:8000/api/v1/global-policy-override/
+```
+
+Observed response:
+
+```
+HTTP/1.1 200 OK
+content-type: application/json
+```
+
+```json
+{
+  "route": "global-policy-override",
+  "message": "Overrode global policy using @guard.policy decorator.",
+  "verdict": "allow",
+  "score": 0.09487499999999999
+}
+```
+
+**Result:** The global configuration maps `/api/v1/global-policy-override/` to the public `search` policy (where Track B is disabled by default). The `@guard.policy("admin", sensitivity="critical", trackB=True)` decorator takes priority, overriding the configuration and forcing Track B verification (with sensitivity elevated to critical).
+
+---
+
+### 8. Global Protect Override (Decorator Priority)
+
+Command:
+
+```bash
+curl -i http://127.0.0.1:8000/api/v1/global-protect-override/
+```
+
+Observed response:
+
+```
+HTTP/1.1 200 OK
+content-type: application/json
+```
+
+```json
+{
+  "route": "global-protect-override",
+  "message": "Overrode global protect rule using @guard.protect decorator.",
+  "verdict": "allow",
+  "score": 0.09487499999999999
+}
+```
+
+**Result:** The global configuration maps `/api/v1/global-protect-override/` to an internal setting with `trackB: False`. The `@guard.protect(sensitivity="critical", trackB=True)` decorator takes precedence, executing the Track B evaluation and promoting the sensitivity profile.
+
+---
+
 ## Thresholds in effect during this verification
 
 From `adiuvare.yaml`:
