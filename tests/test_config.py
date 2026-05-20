@@ -148,3 +148,31 @@ def test_build_snapshot_pulls_runtime_values():
     snap = build_snapshot(AdiuvareConfig())
     assert snap.payload_weight == 0.40
     assert snap.block_threshold == 0.80
+
+
+def test_load_config_raises_for_yaml_list(tmp_path):
+    cfg_path = tmp_path / "adiuvare.yaml"
+    cfg_path.write_text("- hello\n- world\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="must contain a top-level mapping/object, got list"):
+        load_config(cfg_path)
+
+
+def test_load_config_raises_for_yaml_string(tmp_path):
+    cfg_path = tmp_path / "adiuvare.yaml"
+    cfg_path.write_text("just a string\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="must contain a top-level mapping/object, got str"):
+        load_config(cfg_path)
+
+
+def test_load_config_raises_for_yaml_integer(tmp_path):
+    cfg_path = tmp_path / "adiuvare.yaml"
+    cfg_path.write_text("42\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="must contain a top-level mapping/object, got int"):
+        load_config(cfg_path)
+
+
+def test_load_config_raises_for_yaml_boolean(tmp_path):
+    cfg_path = tmp_path / "adiuvare.yaml"
+    cfg_path.write_text("true\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="must contain a top-level mapping/object, got bool"):
+        load_config(cfg_path)
