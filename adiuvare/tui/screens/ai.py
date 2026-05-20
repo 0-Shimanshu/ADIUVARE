@@ -9,7 +9,6 @@ from ..workspace import (
     PALETTE,
     WorkspaceView,
     decision_color,
-    decision_icon,
     render_decision_bar,
     render_signal_bar,
     styled_separator,
