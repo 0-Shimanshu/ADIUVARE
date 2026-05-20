@@ -7,7 +7,6 @@ No detection logic is changed here.  Every assertion tests *current* behaviour
 only.
 """
 
-import pytest
 
 from adiuvare import Guard
 
