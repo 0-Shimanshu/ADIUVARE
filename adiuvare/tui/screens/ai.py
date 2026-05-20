@@ -197,7 +197,7 @@ class AIScreen(WorkspaceView):
         for decision in ("allow", "flag", "throttle", "block"):
             count = int(verdicts.get(decision, 0))
             pct = (count / max(total, 1)) * 100
-           
+            color = decision_color(decision)
             bar = render_decision_bar(count, max_count, color, 20)
             decision_lines.append(
                 f"  {render_decision_badge(decision):<28} {bar} [{PALETTE['cyan']}]{count:>3}[/] [{PALETTE['very_dim']}]{pct:>5.1f}%[/]"
