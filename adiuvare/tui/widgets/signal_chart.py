@@ -19,7 +19,7 @@ class SignalChart(Static):
             color = SIGNAL_COLORS.get(name, PALETTE["cyan"])
             rows.append(
                 f"[{color}]{name:<10}[/] {bar} "
-                f"[{PALETTE['text']}]{int(value):>4}[/] "
+                f"[{PALETTE['text']}]{value:>6.4f}[/] "
                 f"[{PALETTE['cyan']}]{value / peak:.2f}[/]"
             )
         self.update("\n".join(rows))
