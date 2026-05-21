@@ -305,12 +305,15 @@ class EventsScreen(WorkspaceView):
 
         lines = [
             f"[{PALETTE['dim']} bold]EVENT DETAIL[/]",
-            "",
             format_kv("Identity", str(event.get("identity", "?"))),
             format_kv("Endpoint", f"[{PALETTE['dim']}]{event.get('endpoint', '?')}[/]"),
             format_kv("IP", str(event.get("ip", "-") or "-")),
-            f"[{PALETTE['dim']}]Score     [/] {render_score_bar(score, 10)} [{PALETTE['cyan']}]{score:.4f}[/]",
-            format_kv("Verdict", f"[{verdict_color}]{decision_icon(verdict)} {verdict.upper()}[/]"),
+            (
+                f"[{PALETTE['dim']}]Score[/] {render_score_bar(score, 8)} "
+                f"[{PALETTE['cyan']}]{score:.4f}[/]  "
+                f"[{PALETTE['dim']}]Verdict[/] "
+                f"[{verdict_color}]{decision_icon(verdict)} {verdict.upper()}[/]"
+            ),
         ]
 
         if isinstance(breakdown, dict) and breakdown:
@@ -364,27 +367,22 @@ class EventsScreen(WorkspaceView):
 
         lines = [
             f"[{PALETTE['dim']} bold]IDENTITY CONTEXT[/]",
-            "",
             format_kv("Identity", identity),
-            format_kv(
-                "Monitored",
-                "yes" if is_monitored else "no",
-                PALETTE["green"] if is_monitored else PALETTE["dim"],
+            (
+                f"[{PALETTE['dim']}]Monitored[/] "
+                f"[{PALETTE['green'] if is_monitored else PALETTE['dim']}]"
+                f"{'yes' if is_monitored else 'no'}[/]   "
+                f"[{PALETTE['dim']}]Blocked[/] "
+                f"[{PALETTE['red'] if is_blocked else PALETTE['dim']}]"
+                f"{'yes' if is_blocked else 'no'}[/]"
             ),
-            format_kv(
-                "Blocked",
-                "yes" if is_blocked else "no",
-                PALETTE["red"] if is_blocked else PALETTE["dim"],
-            ),
-            format_kv(
-                "Banned IP",
-                "yes" if is_banned else "no",
-                PALETTE["red"] if is_banned else PALETTE["dim"],
-            ),
-            format_kv(
-                "Whitelisted",
-                "yes" if is_whitelisted else "no",
-                PALETTE["green"] if is_whitelisted else PALETTE["dim"],
+            (
+                f"[{PALETTE['dim']}]Banned IP[/] "
+                f"[{PALETTE['red'] if is_banned else PALETTE['dim']}]"
+                f"{'yes' if is_banned else 'no'}[/]   "
+                f"[{PALETTE['dim']}]Whitelisted[/] "
+                f"[{PALETTE['green'] if is_whitelisted else PALETTE['dim']}]"
+                f"{'yes' if is_whitelisted else 'no'}[/]"
             ),
             "",
             styled_separator(),
