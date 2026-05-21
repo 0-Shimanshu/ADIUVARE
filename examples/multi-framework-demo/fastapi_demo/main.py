@@ -97,8 +97,8 @@ async def hard_stop(payload: HardStopPayload, request: Request):
 @guard.exempt()  # Explicit inline code decorator overriding configuration matrix blocks
 async def explicit_override_endpoint():
     """
-    Demonstrates per-endpoint control. This inline decorator pattern explicitly forces an
-    exemption bypass, taking structural precedence over systemic routing matrices.
+    Demonstrates per-endpoint control. This inline decorator explicitly exempts
+    the route from Adiuvare inspection, overriding global configuration.
     """
     return {"route": "explicit-exempt", "message": "Bypassed via direct per-endpoint decorator."}
 
@@ -106,20 +106,19 @@ async def explicit_override_endpoint():
 @app.post("/api/v1/advanced-policy/")
 async def self_described_signal_route(payload: AdvancedPayload, request: Request):
     """
-    Demonstrates a self-described signal edge case. Analyzes payload parameters directly
-    within the application execution frame, recalculates dynamic risk, and injects runtime
-    telemetry mutations back into the active Adiuvare event tracking wrapper before processing.
+    Demonstrates dynamically updating Adiuvare context based on application logic.
+    Analyzes the payload, calculates custom risk, and updates the active event.
     """
     event = getattr(request.state, "adiuvare_event", None)
     
-    # Custom business-logic validation heuristic simulation
+    # Custom application-level risk calculation
     calculated_risk = 0.02
     if "override" in payload.data_stream.lower():
         calculated_risk += 0.55
     if payload.client_entropy > 0.90:
         calculated_risk += 0.25
 
-    # Dynamically updating and elevating the Adiuvare context based on the self-described loop
+    # Update the Adiuvare event with our calculated risk
     if event and calculated_risk > 0.50:
         event.verdict = "flag" if event.verdict == "allow" else event.verdict
         event.score = max(getattr(event, "score", 0.0), calculated_risk)

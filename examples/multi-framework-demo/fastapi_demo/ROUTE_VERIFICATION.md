@@ -60,7 +60,7 @@ content-type: application/json
   "route": "protected",
   "message": "This stricter route passed Adiuvare inspection.",
   "verdict": "allow",
-  "score": 0.09487499999999999
+  "score": 0.09
 }
 ```
 
@@ -91,13 +91,13 @@ content-type: application/json
 ```json
 {
   "route": "review",
-  "message": "Payload review route reached the Django view.",
+  "message": "Payload review route reached the FastAPI view.",
   "received": {"message": "normal search text"},
   "verdict": "allow"
 }
 ```
 
-**Result:** The review route successfully extracts the structural JSON payload from the request stream and moves it through the Adiuvare logic block. Since it's a completely benign payload string, it records a safe baseline below the evaluation threshold and assigns an explicit `allow` verdict.
+**Result:** The review route successfully extracts the JSON payload and processes it. Since it is a benign payload string, it records a safe baseline below the evaluation threshold and assigns an explicit `allow` verdict.
 
 ---
 
@@ -129,11 +129,11 @@ content-type: application/json
     "comment": "<script>alert(1)</script> UNION SELECT password FROM users"
   },
   "verdict": "flag",
-  "score": 0.4379375
+  "score": 0.44
 }
 ```
 
-**Result:** The multi-vector malicious payload text triggers elevated signal anomalies. The calculated evaluation results in a score of `0.437938`. This pushes beyond our configured `flag` limit `(0.25)`, but doesn't cross into the definitive `block` threshold `(0.80)`. The runtime assigns a `flag` status string to the event context. Because `observe_only` is toggled off and the request did not fully trigger a drop, it flows gracefully to our backup return dictionary displaying the correct metrics.
+**Result:** The multi-vector malicious payload text triggers elevated signal anomalies. The calculated evaluation results in a score of `0.44`. This pushes beyond our configured `flag` limit `(0.25)`, but doesn't cross into the definitive `block` threshold `(0.80)`. The runtime assigns a `flag` status to the event context. Because `observe_only` is toggled off and the request did not fully trigger a drop, it flows gracefully to our backup return dictionary displaying the correct metrics.
 
 
 ### 5. Explicit Exempt Route (Per-Endpoint Override):
@@ -153,7 +153,7 @@ content-type: application/json
 {"route":"explicit-exempt","message":"Bypassed via direct per-endpoint decorator."}
 ```
 
-**Result:** The explicit inline decorator pattern intercepts the context execution block. The endpoint resolves cleanly without initializing tracking loops.
+**Result:** The explicit inline decorator explicitely exempts the endpoint from inspection. The endpoint resolves cleanly without going through Adiuvare inspection.
 
 
 ### 6. Advanced Policy Route (Self-Described Signals):
@@ -179,7 +179,7 @@ content-type: application/json
   "final_adiuvare_score": 0.82
 }
 ```
-**Result:** The logic block intercepts the payload parameters, evaluates custom threat conditions internally, and seamlessly mutates the active `request.state.adiuvare_event` variable state inside the execution frame, elevating the output to a "flag" condition.
+**Result:** The logic evaluates custom rules against the payload and updates the `request.state.adiuvare_event` to reflect a flagged state.
 
 ---
 
@@ -203,7 +203,7 @@ content-type: application/json
   "route": "global-policy-override",
   "message": "Overrode global policy using @guard.policy decorator.",
   "verdict": "allow",
-  "score": 0.09487499999999999
+  "score": 0.09
 }
 ```
 
@@ -231,7 +231,7 @@ content-type: application/json
   "route": "global-protect-override",
   "message": "Overrode global protect rule using @guard.protect decorator.",
   "verdict": "allow",
-  "score": 0.09487499999999999
+  "score": 0.09
 }
 ```
 
