@@ -296,14 +296,20 @@ class EventsScreen(WorkspaceView):
         breakdown = event.get("breakdown") or {}
         detail = event.get("detail") or {}
 
+        label_pad = 10
+        label = lambda key, value, color="": (
+            f"[{PALETTE['dim']}]{key:<{label_pad}}[/] "
+            f"[{color or PALETTE['text']}]{value}[/]"
+        )
+
         lines = [
             f"[{PALETTE['dim']} bold]EVENT DETAIL[/]",
             "",
-            styled_label("Identity", str(event.get("identity", "?"))),
-            styled_label("Endpoint", f"[{PALETTE['dim']}]{event.get('endpoint', '?')}[/]"),
-            styled_label("IP", str(event.get("ip", "-") or "-")),
-            f"[{PALETTE['dim']}]Score         [/] {render_score_bar(score)} [{PALETTE['cyan']}]{score:.4f}[/]",
-            styled_label("Verdict", f"[{verdict_color}]{decision_icon(verdict)} {verdict.upper()}[/]"),
+            label("Identity", str(event.get("identity", "?"))),
+            label("Endpoint", f"[{PALETTE['dim']}]{event.get('endpoint', '?')}[/]"),
+            label("IP", str(event.get("ip", "-") or "-")),
+            f"[{PALETTE['dim']}]Score     [/] {render_score_bar(score, 10)} [{PALETTE['cyan']}]{score:.4f}[/]",
+            label("Verdict", f"[{verdict_color}]{decision_icon(verdict)} {verdict.upper()}[/]"),
         ]
 
         if isinstance(breakdown, dict) and breakdown:
@@ -320,8 +326,8 @@ class EventsScreen(WorkspaceView):
                 "",
                 styled_separator(),
                 f"[{PALETTE['very_dim']}]AI DETAIL[/]",
-                styled_label("AI verdict", str(ai.get("verdict", "n/a")), PALETTE["purple"]),
-                styled_label("Confidence", f"{ai.get('confidence', 0):.2f}", PALETTE["cyan"]),
+                label("AI verdict", str(ai.get("verdict", "n/a")), PALETTE["purple"]),
+                label("Confidence", f"{ai.get('confidence', 0):.2f}", PALETTE["cyan"]),
             ])
 
         panel.update("\n".join(lines))
@@ -348,14 +354,21 @@ class EventsScreen(WorkspaceView):
         is_whitelisted = identity in whitelisted
 
         states = self._action_states(event)
+
+        label_pad = 12
+        label = lambda key, value, color="": (
+            f"[{PALETTE['dim']}]{key:<{label_pad}}[/] "
+            f"[{color or PALETTE['text']}]{value}[/]"
+        )
+
         lines = [
             f"[{PALETTE['dim']} bold]IDENTITY CONTEXT[/]",
             "",
-            styled_label("Identity", identity),
-            f"[{PALETTE['dim']}]Monitored     [/] [{PALETTE['green'] if is_monitored else PALETTE['dim']}]{'yes' if is_monitored else 'no'}[/]",
-            f"[{PALETTE['dim']}]Blocked       [/] [{PALETTE['red'] if is_blocked else PALETTE['dim']}]{'yes' if is_blocked else 'no'}[/]",
-            f"[{PALETTE['dim']}]Banned IP     [/] [{PALETTE['red'] if is_banned else PALETTE['dim']}]{'yes' if is_banned else 'no'}[/]",
-            f"[{PALETTE['dim']}]Whitelisted   [/] [{PALETTE['green'] if is_whitelisted else PALETTE['dim']}]{'yes' if is_whitelisted else 'no'}[/]",
+            label("Identity", identity),
+            label("Monitored", "yes" if is_monitored else "no", PALETTE["green"] if is_monitored else PALETTE["dim"]),
+            label("Blocked", "yes" if is_blocked else "no", PALETTE["red"] if is_blocked else PALETTE["dim"]),
+            label("Banned IP", "yes" if is_banned else "no", PALETTE["red"] if is_banned else PALETTE["dim"]),
+            label("Whitelisted", "yes" if is_whitelisted else "no", PALETTE["green"] if is_whitelisted else PALETTE["dim"]),
             "",
             styled_separator(),
             f"[{PALETTE['very_dim']}]AVAILABLE ACTIONS[/]",
