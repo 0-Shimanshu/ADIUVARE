@@ -5,14 +5,53 @@ from ..vendor import detect_sqli, detect_xss, normalize
 from .base import SoftSignal
 from .patterns import check_cmd, check_nosql, check_path, check_sql, check_ssti, check_xss
 
+def _is_discussion_style_sql(text: str) -> bool:
+    low = " ".join(text.lower().split())
+
+    discussion = any(
+        p in low
+        for p in (
+            "how do i",
+            "how to",
+            "example of",
+            "example query",
+            "in a tutorial",
+            "in docs",
+            "documentation",
+        )
+    )
+
+    dangerous = any(
+        p in low
+        for p in (
+            "drop table",
+            "union select",
+            "sleep(",
+            "benchmark(",
+            "curl ",
+            "wget ",
+            "<script",
+            "javascript:",
+        )
+    )
+
+    return (
+        discussion
+        and "select * from users" in low
+        and not dangerous
+    )
 
 _LDAP_PAT = re.compile(
-    r"\*\)\s*\(\s*uid\s*=\s*\*?\s*\)\s*\)\s*\(\|\s*\(\s*uid\s*="
+    r"\*\)\s*\(\s*(?:uid|cn|mail)\s*=\s*\*?\s*\)\s*\)\s*\(\|\s*\(\s*(?:uid|cn|mail)\s*=",
+    re.IGNORECASE,
 )
 
 
 def check_ldap(text: str) -> tuple[bool, float, str]:
-    if ")(uid=" not in text and "))(|(" not in text:
+    low = text.lower()
+    if "))(|(" not in low:
+        return (False, 0.0, "")
+    if all(f"({attr}=" not in low for attr in ("uid", "cn", "mail")):
         return (False, 0.0, "")
     if _LDAP_PAT.search(text):
         return (True, 0.82, "ldap_injection")
@@ -48,6 +87,7 @@ class PayloadSignal(SoftSignal):
                 ldap_pat = raw_ldap
 
         hits: list[tuple[float, str]] = []
+
         if sql_lib["hit"]:
             hits.append((max(sql_lib["conf"], 0.82), sql_lib["fp"] or "sql_lib"))
         if sql_pat[0]:
@@ -66,6 +106,9 @@ class PayloadSignal(SoftSignal):
             hits.append((nosql_pat[1], nosql_pat[2]))
         if ldap_pat[0]:
             hits.append((ldap_pat[1], ldap_pat[2]))
+
+        if _is_discussion_style_sql(text):
+            hits = [h for h in hits if h[1] != "select_from"]
 
         if not hits:
             return SignalResult(score=0.0, reason="clean")

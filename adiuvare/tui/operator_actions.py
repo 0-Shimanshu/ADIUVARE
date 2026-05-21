@@ -9,12 +9,23 @@ from textual.widgets import Button
 from .workspace import PALETTE
 
 
+DISCONNECTED_RUNTIME_REASON = "Requires live runtime connection"
+
+
 @dataclass(frozen=True)
 class ActionAvailability:
     """Whether an operator action can run and why it is blocked when not."""
 
     enabled: bool
     reason: str = ""
+
+
+def require_runtime_connection(state: ActionAvailability, connected: bool) -> ActionAvailability:
+    """Block runtime-mutating actions when the TUI is not attached to a live runtime."""
+
+    if connected or not state.enabled:
+        return state
+    return ActionAvailability(False, DISCONNECTED_RUNTIME_REASON)
 
 
 def apply_action_availability(button: Button, state: ActionAvailability) -> None:
@@ -42,7 +53,7 @@ def format_action_status(
     if not connected:
         parts.append(
             f"[{PALETTE['orange']}]Disconnected[/] "
-            f"[{PALETTE['dim']}]— actions queue to local audit, not live runtime[/]"
+            f"[{PALETTE['dim']}]— cached inspection only; runtime actions disabled[/]"
         )
 
     if selected_label:

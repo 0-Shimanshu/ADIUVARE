@@ -12,6 +12,7 @@ from ..operator_actions import (
     apply_action_availability,
     format_action_legend_line,
     format_action_status,
+    require_runtime_connection,
 )
 from ..workspace import (
     PALETTE,
@@ -114,37 +115,37 @@ class EventsScreen(WorkspaceView):
             self.action_export_json()
 
     def action_confirm_block(self) -> None:
-        if not self._selected:
+        if not self._selected or not self._app().connected:
             return
         self._app().confirm_block(str(self._selected.get("identity", "")))
         self._app().set_footer_status("confirm block sent")
 
     def action_whitelist(self) -> None:
-        if not self._selected:
+        if not self._selected or not self._app().connected:
             return
         self._app().whitelist_identity(str(self._selected.get("identity", "")))
         self._app().set_footer_status("whitelist sent")
 
     def action_monitor_identity(self) -> None:
-        if not self._selected:
+        if not self._selected or not self._app().connected:
             return
         self._app().monitor_identity(str(self._selected.get("identity", "")))
         self._app().set_footer_status("monitor identity sent")
 
     def _action_unmonitor(self) -> None:
-        if not self._selected:
+        if not self._selected or not self._app().connected:
             return
         self._app().unmonitor_identity(str(self._selected.get("identity", "")))
         self._app().set_footer_status("unmonitor identity sent")
 
     def _action_unblock_monitor(self) -> None:
-        if not self._selected:
+        if not self._selected or not self._app().connected:
             return
         self._app().unblock_monitor(str(self._selected.get("identity", "")))
         self._app().set_footer_status("unblock + monitor sent")
 
     def _action_ban_ip(self) -> None:
-        if not self._selected:
+        if not self._selected or not self._app().connected:
             return
         ip = str(self._selected.get("ip", ""))
         if ip:
@@ -152,7 +153,7 @@ class EventsScreen(WorkspaceView):
             self._app().set_footer_status(f"ban IP {ip} sent")
 
     def _action_unban_ip(self) -> None:
-        if not self._selected:
+        if not self._selected or not self._app().connected:
             return
         ip = str(self._selected.get("ip", ""))
         if ip:
@@ -242,22 +243,37 @@ class EventsScreen(WorkspaceView):
         verdict = str(event.get("verdict", "allow")) if event else "allow"
         ip = str(event.get("ip", "") or "") if event else ""
         has_ip = bool(ip and ip != "-")
+        connected = self._app().connected
 
         select_first = "Select an event row first"
+        runtime = require_runtime_connection
+
         return {
-            "events-confirm": ActionAvailability(
-                has and verdict != "block",
-                select_first if not has else "Already blocked",
+            "events-confirm": runtime(
+                ActionAvailability(
+                    has and verdict != "block",
+                    select_first if not has else "Already blocked",
+                ),
+                connected,
             ),
-            "events-whitelist": ActionAvailability(has, select_first),
-            "events-monitor": ActionAvailability(has, select_first),
-            "events-unmonitor": ActionAvailability(has, select_first),
-            "events-unblock-monitor": ActionAvailability(
-                has and verdict == "block",
-                select_first if not has else "Only for blocked events",
+            "events-whitelist": runtime(ActionAvailability(has, select_first), connected),
+            "events-monitor": runtime(ActionAvailability(has, select_first), connected),
+            "events-unmonitor": runtime(ActionAvailability(has, select_first), connected),
+            "events-unblock-monitor": runtime(
+                ActionAvailability(
+                    has and verdict == "block",
+                    select_first if not has else "Only for blocked events",
+                ),
+                connected,
             ),
-            "events-ban-ip": ActionAvailability(has and has_ip, select_first if not has else "No IP on event"),
-            "events-unban-ip": ActionAvailability(has and has_ip, select_first if not has else "No IP on event"),
+            "events-ban-ip": runtime(
+                ActionAvailability(has and has_ip, select_first if not has else "No IP on event"),
+                connected,
+            ),
+            "events-unban-ip": runtime(
+                ActionAvailability(has and has_ip, select_first if not has else "No IP on event"),
+                connected,
+            ),
             "events-export": ActionAvailability(has, select_first),
         }
 

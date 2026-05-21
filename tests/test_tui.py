@@ -280,14 +280,20 @@ async def test_events_disabled_actions_show_reasons(app):
 
         confirm = app.query_one("#events-confirm", Button)
         unblock = app.query_one("#events-unblock-monitor", Button)
+        whitelist = app.query_one("#events-whitelist", Button)
+        export_btn = app.query_one("#events-export", Button)
         status = app.query_one("#events-action-status", Static)
 
         assert confirm.disabled is True
         assert confirm.has_class("action-unavailable")
         assert "Already blocked" in (confirm.tooltip or "")
-        assert unblock.disabled is False
+        assert unblock.disabled is True
+        assert "Requires live runtime connection" in (unblock.tooltip or "")
+        assert whitelist.disabled is True
+        assert export_btn.disabled is False
         status_text = str(status.render())
         assert "Disconnected" in status_text
+        assert "runtime actions disabled" in status_text
         assert "Already blocked" in status_text
 
 

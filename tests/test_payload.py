@@ -213,6 +213,36 @@ def test_payload_keeps_union_phrase_clean():
     res = asyncio.run(PayloadSignal().extract(ctx))
     assert res.score == 0.0
 
+def test_payload_keeps_discussion_style_select_example_lower():
+    ctx = RequestContext(
+        identity="u1",
+        payload="How do I write SELECT * FROM users in a tutorial?",
+        url="/docs",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/docs",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score < 0.7
+
+
+def test_payload_still_flags_real_sqli_attempt():
+    ctx = RequestContext(
+        identity="u1",
+        payload='SELECT * FROM users WHERE id = "" OR 1=1 --',
+        url="/login",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/login",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+
+    assert res.score >= 0.7
+    
 
 def test_payload_marks_drop_table_text():
     ctx = RequestContext(
@@ -408,11 +438,55 @@ def test_payload_keeps_pipe_filter_param_clean():
     res = asyncio.run(PayloadSignal().extract(ctx))
     assert res.score == 0.0
 
-
 def test_payload_marks_ldap_injection_probe():
     ctx = RequestContext(
         identity="u1",
         payload="*)(uid=*))(|(uid=*",
+        url="/search",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/search",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.7
+
+
+def test_payload_marks_cn_ldap_injection_probe():
+    ctx = RequestContext(
+        identity="u1",
+        payload="*)(cn=*))(|(cn=*",
+        url="/search",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/search",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.7
+
+
+def test_payload_marks_mixed_attr_ldap_injection_probe():
+    ctx = RequestContext(
+        identity="u1",
+        payload="*)(cn=*))(|(mail=*",
+        url="/search",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/search",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.7
+
+
+def test_payload_marks_encoded_ldap_injection_probe():
+    ctx = RequestContext(
+        identity="u1",
+        payload="%2A%29%28cn%3D%2A%29%29%28%7C%28mail%3D%2A",
         url="/search",
         method="POST",
         headers={},
@@ -448,6 +522,96 @@ def test_payload_keeps_uid_filter_tutorial_clean():
         headers={},
         ip="127.0.0.1",
         endpoint="/search",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score == 0.0
+
+
+def test_payload_marks_etc_passwd_probe():
+    ctx = RequestContext(
+        identity="u1",
+        payload=";cat /etc/passwd",
+        url="/search",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/search",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.7
+
+
+def test_payload_marks_subshell_passwd_probe():
+    ctx = RequestContext(
+        identity="u1",
+        payload="$(cat /etc/passwd)",
+        url="/search",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/search",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.7
+
+
+def test_payload_keeps_bash_docs_text_clean():
+    ctx = RequestContext(
+        identity="u1",
+        payload="How do I use $(...) in Bash?",
+        url="/docs",
+        method="GET",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/docs",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score == 0.0
+
+
+def test_payload_keeps_curl_docs_clean():
+    ctx = RequestContext(
+        identity="u1",
+        payload="How do I use curl against localhost?",
+        url="/docs",
+        method="GET",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/docs",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score == 0.0
+
+
+def test_payload_keeps_wget_docs_clean():
+    ctx = RequestContext(
+        identity="u1",
+        payload="Example: wget https://example.com/file.zip",
+        url="/docs",
+        method="GET",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/docs",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score == 0.0
+
+
+def test_payload_keeps_markdown_codeblock_clean():
+    ctx = RequestContext(
+        identity="u1",
+        payload="```bash\ncurl http://localhost:8000\n```",
+        url="/docs",
+        method="GET",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/docs",
     )
 
     res = asyncio.run(PayloadSignal().extract(ctx))

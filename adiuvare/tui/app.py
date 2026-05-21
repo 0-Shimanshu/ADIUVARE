@@ -79,6 +79,8 @@ class AdiuvareApp(App[None]):
                 yield Button("7 Changes", id="tab-changes", classes="tab-btn")
                 yield Static("", id="tab-filler")
 
+            yield Static("", id="connection-banner")
+
             with ContentSwitcher(initial="monitor-view", id="body-switcher"):
                 yield MonitorScreen(id="monitor-view")
                 yield EventsScreen(id="events-view")
@@ -307,8 +309,21 @@ class AdiuvareApp(App[None]):
             )
         else:
             self.query_one("#header-status", Static).update(
-                Text.from_markup(f"[{PALETTE['orange']}]offline[/]")
+                Text.from_markup(f"[{PALETTE['orange']}]disconnected[/]")
             )
+
+        banner = self.query_one("#connection-banner", Static)
+        if live:
+            banner.update("")
+            banner.display = False
+        else:
+            banner.update(
+                Text.from_markup(
+                    f" [{PALETTE['orange']}]DISCONNECTED[/] "
+                    f"[{PALETTE['dim']}]Cached audit data only — connect to a live runtime for bans, blocks, and monitors[/]"
+                )
+            )
+            banner.display = True
 
         mode = "observe" if snap.get("observe_only", False) else "enforce"
         mode_color = PALETTE["green"] if mode == "observe" else PALETTE["red"]
@@ -324,9 +339,9 @@ class AdiuvareApp(App[None]):
         self.query_one("#header-clock", Static).update(
             Text(datetime.now().strftime("%I:%M:%S %p"), style=PALETTE["dim"])
         )
-        link_text = "live link active" if live else ""
+        link_text = "live link active" if live else "disconnected — cached data only"
         self.query_one("#footer-link-status", Static).update(
-            Text(link_text, style=PALETTE["green"] if live else PALETTE["dim"])
+            Text(link_text, style=PALETTE["green"] if live else PALETTE["orange"])
         )
 
     def _sync_view(self) -> None:
@@ -343,6 +358,8 @@ class AdiuvareApp(App[None]):
     def _sync_footer(self, page: WorkspaceView) -> None:
         self.query_one("#footer-left", Static).update(Text(page.shortcut_summary(), style=PALETTE["dim"]))
         right = page.footer_status()
+        if not self.connected:
+            right = f"offline mode  .  {right}"
         if self._footer_note:
             right = f"{right}  .  {self._footer_note}"
         right_color = PALETTE["very_dim"]

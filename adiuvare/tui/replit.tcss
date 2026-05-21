@@ -74,6 +74,14 @@ Screen {
     border-bottom: tall #58a6ff;
 }
 
+#connection-banner {
+    height: 1;
+    background: #1c1408;
+    color: #f0883e;
+    padding: 0 1;
+    display: none;
+}
+
 #tab-filler {
     width: 1fr;
     height: 3;
