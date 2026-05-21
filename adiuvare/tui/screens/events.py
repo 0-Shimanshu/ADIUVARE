@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, cast
 from rich.text import Text
 from textual.app import ComposeResult
 from textual.binding import Binding
-from textual.containers import Horizontal, HorizontalScroll, Vertical
+from textual.containers import Horizontal, HorizontalScroll, Vertical, VerticalScroll
 from textual.widgets import Button, DataTable, Input, Static
 
 from ..operator_actions import (
@@ -21,7 +21,6 @@ from ..workspace import (
     dominant_color,
     render_score_bar,
     render_signal_bar,
-    styled_label,
     styled_separator,
 )
 
@@ -62,8 +61,10 @@ class EventsScreen(WorkspaceView):
             with Horizontal(id="events-body"):
                 yield DataTable(id="events-table")
                 with Vertical(id="events-right-col"):
-                    yield Static("", id="events-detail-panel")
-                    yield Static("", id="events-context-panel")
+                    with VerticalScroll(id="events-detail-panel"):
+                        yield Static("", id="events-detail-text")
+                    with VerticalScroll(id="events-context-panel"):
+                        yield Static("", id="events-context-text")
                     with HorizontalScroll(id="events-action-bar"):
                         yield Button("Confirm Block", id="events-confirm", classes="confirm")
                         yield Button("Whitelist", id="events-whitelist", classes="success")
@@ -284,7 +285,7 @@ class EventsScreen(WorkspaceView):
         )
 
     def _render_detail(self) -> None:
-        panel = self.query_one("#events-detail-panel", Static)
+        panel = self.query_one("#events-detail-text", Static)
         if not self._selected:
             panel.update(f"[{PALETTE['very_dim']}]Select an event to view details.[/]")
             return
@@ -297,19 +298,19 @@ class EventsScreen(WorkspaceView):
         detail = event.get("detail") or {}
 
         label_pad = 10
-        label = lambda key, value, color="": (
-            f"[{PALETTE['dim']}]{key:<{label_pad}}[/] "
-            f"[{color or PALETTE['text']}]{value}[/]"
-        )
+
+        def format_kv(key: str, value: str, color: str = "") -> str:
+            text_color = color or PALETTE["text"]
+            return f"[{PALETTE['dim']}]{key:<{label_pad}}[/] [{text_color}]{value}[/]"
 
         lines = [
             f"[{PALETTE['dim']} bold]EVENT DETAIL[/]",
             "",
-            label("Identity", str(event.get("identity", "?"))),
-            label("Endpoint", f"[{PALETTE['dim']}]{event.get('endpoint', '?')}[/]"),
-            label("IP", str(event.get("ip", "-") or "-")),
+            format_kv("Identity", str(event.get("identity", "?"))),
+            format_kv("Endpoint", f"[{PALETTE['dim']}]{event.get('endpoint', '?')}[/]"),
+            format_kv("IP", str(event.get("ip", "-") or "-")),
             f"[{PALETTE['dim']}]Score     [/] {render_score_bar(score, 10)} [{PALETTE['cyan']}]{score:.4f}[/]",
-            label("Verdict", f"[{verdict_color}]{decision_icon(verdict)} {verdict.upper()}[/]"),
+            format_kv("Verdict", f"[{verdict_color}]{decision_icon(verdict)} {verdict.upper()}[/]"),
         ]
 
         if isinstance(breakdown, dict) and breakdown:
@@ -326,14 +327,14 @@ class EventsScreen(WorkspaceView):
                 "",
                 styled_separator(),
                 f"[{PALETTE['very_dim']}]AI DETAIL[/]",
-                label("AI verdict", str(ai.get("verdict", "n/a")), PALETTE["purple"]),
-                label("Confidence", f"{ai.get('confidence', 0):.2f}", PALETTE["cyan"]),
+                format_kv("AI verdict", str(ai.get("verdict", "n/a")), PALETTE["purple"]),
+                format_kv("Confidence", f"{ai.get('confidence', 0):.2f}", PALETTE["cyan"]),
             ])
 
         panel.update("\n".join(lines))
 
     def _render_context(self) -> None:
-        panel = self.query_one("#events-context-panel", Static)
+        panel = self.query_one("#events-context-text", Static)
         if not self._selected:
             panel.update("")
             return
@@ -356,19 +357,35 @@ class EventsScreen(WorkspaceView):
         states = self._action_states(event)
 
         label_pad = 12
-        label = lambda key, value, color="": (
-            f"[{PALETTE['dim']}]{key:<{label_pad}}[/] "
-            f"[{color or PALETTE['text']}]{value}[/]"
-        )
+
+        def format_kv(key: str, value: str, color: str = "") -> str:
+            text_color = color or PALETTE["text"]
+            return f"[{PALETTE['dim']}]{key:<{label_pad}}[/] [{text_color}]{value}[/]"
 
         lines = [
             f"[{PALETTE['dim']} bold]IDENTITY CONTEXT[/]",
             "",
-            label("Identity", identity),
-            label("Monitored", "yes" if is_monitored else "no", PALETTE["green"] if is_monitored else PALETTE["dim"]),
-            label("Blocked", "yes" if is_blocked else "no", PALETTE["red"] if is_blocked else PALETTE["dim"]),
-            label("Banned IP", "yes" if is_banned else "no", PALETTE["red"] if is_banned else PALETTE["dim"]),
-            label("Whitelisted", "yes" if is_whitelisted else "no", PALETTE["green"] if is_whitelisted else PALETTE["dim"]),
+            format_kv("Identity", identity),
+            format_kv(
+                "Monitored",
+                "yes" if is_monitored else "no",
+                PALETTE["green"] if is_monitored else PALETTE["dim"],
+            ),
+            format_kv(
+                "Blocked",
+                "yes" if is_blocked else "no",
+                PALETTE["red"] if is_blocked else PALETTE["dim"],
+            ),
+            format_kv(
+                "Banned IP",
+                "yes" if is_banned else "no",
+                PALETTE["red"] if is_banned else PALETTE["dim"],
+            ),
+            format_kv(
+                "Whitelisted",
+                "yes" if is_whitelisted else "no",
+                PALETTE["green"] if is_whitelisted else PALETTE["dim"],
+            ),
             "",
             styled_separator(),
             f"[{PALETTE['very_dim']}]AVAILABLE ACTIONS[/]",
