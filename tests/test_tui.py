@@ -11,6 +11,7 @@ from adiuvare.core.models import AdiuvareEvent
 HAS_TEXTUAL = importlib.util.find_spec("textual") is not None
 
 if HAS_TEXTUAL:
+    from textual.containers import VerticalScroll
     from textual.widgets import Button, ContentSwitcher, DataTable, Input, Select, Static
 
     from adiuvare.tui.app import AdiuvareApp
@@ -269,8 +270,10 @@ async def test_events_screen_layout_has_sidebar_sections(app):
         assert app.query_one("#events-header-notice", Static)
         assert app.query_one("#events-body")
         assert app.query_one("#events-right-col")
-        assert app.query_one("#events-detail-panel", Static)
-        assert app.query_one("#events-context-panel", Static)
+        assert app.query_one("#events-detail-panel", VerticalScroll)
+        assert app.query_one("#events-detail-text", Static)
+        assert app.query_one("#events-context-panel", VerticalScroll)
+        assert app.query_one("#events-context-text", Static)
 
 
 @pytest.mark.asyncio
