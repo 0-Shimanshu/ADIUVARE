@@ -27,8 +27,9 @@ def build_http_ctx(
 
 
 def ctx_payload(body_text: str | None, query_text: str | None) -> str | None:
+    body_clean = body_text.strip() if body_text is not None else ""
     parts: list[str] = []
-    if body_text:
+    if body_clean:
         parts.append(body_text)
     if query_text:
         values = " ".join(

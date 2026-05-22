@@ -1,6 +1,8 @@
 import asyncio
+import inspect
 
 from adiuvare import Guard
+from adiuvare.policies import BUILTIN_POLICIES
 from adiuvare.state.event_stream import RedisEventStream
 
 
@@ -100,3 +102,53 @@ def test_guard_check_detects_shell_probe_via_pipe():
     assert gate.passed is True
     assert event is not None
     assert event.score > 0.0
+
+
+def test_guard_check_detects_etc_passwd_probe():
+    guard = Guard()
+    gate, event = guard.check_sync(
+        "u4",
+        payload="$(cat /etc/passwd)",
+    )
+    assert gate.passed is True
+    assert event is not None
+    assert event.score > 0.0
+
+
+def test_route_decorators_preserve_sync_handler_shape():
+    guard = Guard.__new__(Guard)
+    guard.policies = dict(BUILTIN_POLICIES)
+
+    def handler():
+        return "ok"
+
+    decorated = [
+        guard.exempt()(handler),
+        guard.protect()(handler),
+        guard.policy("admin")(handler),
+    ]
+
+    for wrapped in decorated:
+        assert inspect.iscoroutinefunction(wrapped) is False
+        assert wrapped() == "ok"
+
+
+def test_route_decorators_preserve_async_handler_shape():
+    guard = Guard.__new__(Guard)
+    guard.policies = dict(BUILTIN_POLICIES)
+
+    async def handler():
+        return "ok"
+
+    decorated = [
+        guard.exempt()(handler),
+        guard.protect()(handler),
+        guard.policy("admin")(handler),
+    ]
+
+    async def run():
+        for wrapped in decorated:
+            assert inspect.iscoroutinefunction(wrapped) is True
+            assert await wrapped() == "ok"
+
+    asyncio.run(run())

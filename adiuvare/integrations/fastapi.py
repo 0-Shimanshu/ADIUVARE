@@ -20,8 +20,6 @@ class AdiuvareMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         await self._guard.ensure_started()
-        body = await request.body()
-        body_text = body.decode() if body else None
         raw_ip = request.headers.get("x-forwarded-for", "")
         ip = raw_ip.split(",", 1)[0].strip()
         if not ip:
@@ -30,6 +28,9 @@ class AdiuvareMiddleware(BaseHTTPMiddleware):
         route_cfg = self._guard.routecfg(request.url.path, endpoint)
         if route_cfg.get("exempt"):
             return await call_next(request)
+
+        body = await request.body()
+        body_text = body.decode()
 
         ctx = build_http_ctx(
             identity=request.headers.get("x-user-id", request.client.host if request.client else "anon"),

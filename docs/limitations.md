@@ -57,11 +57,16 @@ One important consequence today:
 - a disconnected TUI can still show cached data and control-plane history, but
   that is not the same thing as mutating live runtime state
 
-This is an area to tighten further. The long-term goal is to make the offline
-story more explicit, either by disabling actions that cannot be applied for
-real or by giving local single-instance mode a true local mutation path.
+The header bar shows `connected` or `disconnected` at all times. When
+disconnected, a banner and footer text make cached-only mode obvious. On Events
+and Audit, runtime-mutating buttons and shortcuts are disabled so they cannot
+be mistaken for live control. Export and read-only inspection still work.
 
-That means the TUI is strongest when attached to a running runtime.
+For the full breakdown of which screens work offline, which actions require a
+live runtime, and how the UI signals connection state, see
+[TUI](operator/tui.md).
+
+The TUI is strongest when attached to a running runtime.
 
 ## The TUI is still a bounded operator console
 
@@ -217,7 +222,7 @@ Typical cases:
 
 Examples:
 
-- "How do I write SELECT * FROM users in a tutorial?"
+- "How do I write SELECT \* FROM users in a tutorial?"
 - "How do I print <script> literally in docs?"
 
 These are not attacks, but may still produce elevated payload scores.

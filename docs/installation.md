@@ -1,18 +1,28 @@
 # Installation
 
-Installing Adiuvare is straightforward. The only real choice up front is
-whether you want just the core library, the TUI, or the Redis backend too.
+Installing Adiuvare is straightforward. The only real choice up front is whether you want just the core library, the TUI, or the Redis backend too.
 
 ## Quick install
 
+### For Regular Users (Remote Installation)
+
+Use these commands to install Adiuvare directly from GitHub into your environment without needing to clone the repository source tree manually:
+
 | need | command |
 | --- | --- |
-| core library | `pip install adiuvare` |
-| core + TUI | `pip install "adiuvare[tui]"` |
-| core + Redis | `pip install "adiuvare[redis]"` |
-| editable local dev | `pip install -e .` |
-| editable dev test stack | `pip install -e ".[dev]"` |
-| editable dev with extras | `pip install -e ".[dev,tui,redis]"` |
+| core library | `python -m pip install "git+https://github.com/0-Shimanshu/ADIUVARE.git"` |
+| core + TUI | `python -m pip install "adiuvare[tui] @ git+https://github.com/0-Shimanshu/ADIUVARE.git"` |
+| core + Redis | `python -m pip install "adiuvare[redis] @ git+https://github.com/0-Shimanshu/ADIUVARE.git"` |
+
+### For Project Contributors (Local Repository Clone)
+
+If you are a developer working directly inside a local clone of the repository source tree, navigate to the repository root directory and use these commands:
+
+| need | command |
+| --- | --- |
+| editable local dev | `python -m pip install -e .` |
+| editable dev test stack | `python -m pip install -e ".[dev]"` |
+| editable dev with extras | `python -m pip install -e ".[dev,tui,redis]"` |
 
 ## Verify the install
 
@@ -47,7 +57,7 @@ can read it.
 If you want the Textual operator console, install the TUI extra.
 
 ```bash
-pip install "adiuvare[tui]"
+python -m pip install "adiuvare[tui] @ git+https://github.com/0-Shimanshu/ADIUVARE.git"
 ```
 
 Then launch it with:
@@ -71,7 +81,7 @@ The current TUI has seven screens:
 If you want the Redis event-stream backend, install the Redis extra.
 
 ```bash
-pip install "adiuvare[redis]"
+python -m pip install "adiuvare[redis] @ git+https://github.com/0-Shimanshu/ADIUVARE.git"
 ```
 
 Then set:
@@ -91,13 +101,13 @@ runtime:
 Use an editable install when you are changing the library itself.
 
 ```bash
-pip install -e ".[dev]"
+python -m pip install -e ".[dev]"
 ```
 
 Or with the common extras:
 
 ```bash
-pip install -e ".[dev,tui,redis]"
+python -m pip install -e ".[dev,tui,redis]"
 ```
 
 That is the smoothest setup for local development, tests, and doc work.
@@ -138,7 +148,7 @@ heuristics. That keeps the runtime usable, but it is still the weaker path.
 Install the TUI extra:
 
 ```bash
-pip install "adiuvare[tui]"
+python -m pip install "adiuvare[tui] @ git+https://github.com/0-Shimanshu/ADIUVARE.git"
 ```
 
 ### Redis import errors
@@ -146,7 +156,7 @@ pip install "adiuvare[tui]"
 Install the Redis extra:
 
 ```bash
-pip install "adiuvare[redis]"
+python -m pip install "adiuvare[redis] @ git+https://github.com/0-Shimanshu/ADIUVARE.git"
 ```
 
 ### libinjection not loading

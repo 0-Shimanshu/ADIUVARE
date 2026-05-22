@@ -17,7 +17,7 @@ dependencies = [
 dev = [
   "pytest",
   "pytest-asyncio",
-  "fastapi",
+  "fastapi>=0.132.1",
   "flask",
   "django",
   "sqlalchemy",
@@ -53,6 +53,7 @@ include = ["adiuvare*"]
 [tool.setuptools.package-data]
 adiuvare = [
   "state/schema.sql",
+  "tui/*.tcss",
   "vendor/*.dll",
   "vendor/*.so",
   "vendor/*.dylib",
