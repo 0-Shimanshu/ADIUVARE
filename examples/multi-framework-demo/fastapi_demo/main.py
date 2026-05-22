@@ -1,10 +1,12 @@
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from adiuvare import Guard
+import os
 
 app = FastAPI(title="Adiuvare FastAPI Demo")
 
-guard = Guard.from_config("adiuvare.yaml")
+config_path = os.path.join(os.path.dirname(__file__), "adiuvare.yaml")
+guard = Guard.from_config(config_path)
 guard.use(app, framework="fastapi")
 
 guard.configure_routes(
