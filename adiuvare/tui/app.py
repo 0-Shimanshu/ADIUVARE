@@ -79,7 +79,9 @@ class AdiuvareApp(App[None]):
                 yield Button("7 Changes", id="tab-changes", classes="tab-btn")
                 yield Static("", id="tab-filler")
 
-            yield Static("", id="connection-banner")
+            with Horizontal(id="connection-banner"):
+                yield Static("", id="connection-banner-text")
+                yield Button("Reconnect", id="reconnect-btn", classes="reconnect-btn")
 
             with ContentSwitcher(initial="monitor-view", id="body-switcher"):
                 yield MonitorScreen(id="monitor-view")
@@ -113,6 +115,8 @@ class AdiuvareApp(App[None]):
         button_id = event.button.id or ""
         if button_id.startswith("tab-"):
             self.action_switch_view(button_id.removeprefix("tab-"))
+        elif button_id == "reconnect-btn":
+            self.run_worker(self._reconnect(), exclusive=True)
 
     def action_switch_view(self, view: str) -> None:
         self._view = view
@@ -312,18 +316,23 @@ class AdiuvareApp(App[None]):
                 Text.from_markup(f"[{PALETTE['orange']}]disconnected[/]")
             )
 
-        banner = self.query_one("#connection-banner", Static)
+        banner = self.query_one("#connection-banner", Horizontal)
+        banner_text = self.query_one("#connection-banner-text", Static)
+        reconnect_btn = self.query_one("#reconnect-btn", Button)
         if live:
-            banner.update("")
+            banner_text.update("")
             banner.display = False
+            reconnect_btn.display = False
         else:
-            banner.update(
+            banner_text.update(
                 Text.from_markup(
                     f" [{PALETTE['orange']}]DISCONNECTED[/] "
                     f"[{PALETTE['dim']}]Cached audit data only — connect to a live runtime for bans, blocks, and monitors[/]"
                 )
             )
             banner.display = True
+            reconnect_btn.display = True
+            reconnect_btn.disabled = False
 
         mode = "observe" if snap.get("observe_only", False) else "enforce"
         mode_color = PALETTE["green"] if mode == "observe" else PALETTE["red"]
@@ -431,7 +440,26 @@ class AdiuvareApp(App[None]):
                 del self._stream_rows[145:]
                 self._active_page().refresh_view()
         except Exception:
+            self.connected = False
             self.set_footer_status("stream link dropped")
+            self._update_header()
+
+    async def _reconnect(self) -> None:
+        btn = self.query_one("#reconnect-btn", Button)
+        btn.disabled = True
+        self.set_footer_status("reconnecting\u2026")
+        try:
+            await self.client.command("get_runtime_snapshot", {})
+            self.connected = True
+            # Cancel and remove any dead tasks before adding new ones
+            self._tasks = [t for t in self._tasks if not t.done()]
+            self._tasks.append(asyncio.create_task(self._stream_loop()))
+            self._tasks.append(asyncio.create_task(self._refresh_runtime()))
+            self.set_footer_status("reconnected")
+        except Exception:
+            self.set_footer_status("reconnect failed \u2014 try again")
+            btn.disabled = False
+        self._update_header()
 
     def _runtime_patch(self, changes: dict) -> dict:
         patch = {}

@@ -78,8 +78,36 @@ Screen {
     height: 1;
     background: #1c1408;
     color: #f0883e;
-    padding: 0 1;
+    padding: 0 0;
+    layout: horizontal;
     display: none;
+}
+
+#connection-banner-text {
+    width: 1fr;
+    padding: 0 1;
+}
+
+.reconnect-btn {
+    width: auto;
+    height: 1;
+    min-width: 14;
+    background: #f0883e;
+    color: #0d1117;
+    border: none;
+    margin: 0;
+    padding: 0 1;
+    text-style: bold;
+    display: none;
+}
+
+.reconnect-btn:hover {
+    background: #ffa657;
+}
+
+.reconnect-btn:disabled {
+    background: #3d2b10;
+    color: #8b6030;
 }
 
 #tab-filler {
