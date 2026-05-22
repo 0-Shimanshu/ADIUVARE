@@ -1,4 +1,3 @@
-import uvicorn
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from adiuvare import Guard
@@ -165,4 +164,5 @@ async def global_protect_override_route(request: Request):
     }
 
 if __name__ == "__main__":
+    import uvicorn
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
