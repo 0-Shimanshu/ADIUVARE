@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 
 from adiuvare.config import SignalWeights, Thresholds, build_snapshot, find_config_file, load_config
 from adiuvare.config.schema import AdiuvareConfig, PRESETS
@@ -148,3 +149,52 @@ def test_build_snapshot_pulls_runtime_values():
     snap = build_snapshot(AdiuvareConfig())
     assert snap.payload_weight == 0.40
     assert snap.block_threshold == 0.80
+
+
+def test_load_config_raises_for_yaml_list(tmp_path):
+    cfg_path = tmp_path / "adiuvare.yaml"
+    cfg_path.write_text("- hello\n- world\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="must contain a top-level mapping/object, got list"):
+        load_config(cfg_path)
+
+
+def test_load_config_raises_for_yaml_string(tmp_path):
+    cfg_path = tmp_path / "adiuvare.yaml"
+    cfg_path.write_text("just a string\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="must contain a top-level mapping/object, got str"):
+        load_config(cfg_path)
+
+
+def test_load_config_raises_for_yaml_integer(tmp_path):
+    cfg_path = tmp_path / "adiuvare.yaml"
+    cfg_path.write_text("42\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="must contain a top-level mapping/object, got int"):
+        load_config(cfg_path)
+
+
+def test_load_config_raises_for_yaml_boolean(tmp_path):
+    cfg_path = tmp_path / "adiuvare.yaml"
+    cfg_path.write_text("true\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="must contain a top-level mapping/object, got bool"):
+        load_config(cfg_path)
+
+
+def test_ai_config_rejects_invalid_mode():
+    """A typo like 'assit' must raise ValidationError, not silently disable AI."""
+    with pytest.raises(ValidationError): 
+        AdiuvareConfig(ai={"mode": "assit"})
+
+
+def test_ai_config_accepts_all_valid_modes():
+    """All four documented modes must be accepted without error."""
+    for mode in ("off", "assist", "critical", "async"):
+        cfg = AdiuvareConfig(ai={"mode": mode})
+        assert cfg.ai.mode == mode
+
+
+def test_load_config_rejects_invalid_ai_mode_from_yaml(tmp_path):
+    """A YAML file with an invalid ai.mode must fail on load, not silently."""
+    cfg_path = tmp_path / "adiuvare.yaml"
+    cfg_path.write_text("ai:\n  mode: assit\n", encoding="utf-8")
+    with pytest.raises(ValidationError):  
+        load_config(cfg_path)

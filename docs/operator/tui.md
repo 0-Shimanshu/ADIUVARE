@@ -30,6 +30,63 @@ When disconnected, it falls back to:
 The TUI is still useful offline. It is just strongest when attached to a
 running runtime.
 
+### How the UI signals connection state
+
+The header bar shows the current connection state at all times:
+
+- `connected` in green means a live runtime socket is reachable
+- `disconnected` in orange means no socket was found or the runtime is unreachable
+
+When disconnected, an orange banner appears below the tab strip:
+
+```text
+DISCONNECTED — Cached audit data only — connect to a live runtime for bans, blocks, and monitors
+```
+
+The footer shows `live link active` when connected. When disconnected it shows
+`disconnected — cached data only`, and the right footer adds `offline mode`
+before the current screen status.
+
+If the stream drops mid-session, the footer may also show `stream link dropped`.
+The TUI does not exit or reconnect automatically in that case.
+
+### How the UI signals unavailable actions
+
+On Events and Audit, runtime-mutating actions are disabled while disconnected.
+Disabled buttons use dimmed dashed styling. Hover a disabled button for the
+specific reason, and read the action-bar hint beside the buttons for selection
+and connection context.
+
+Inspection actions such as export remain available offline. The identity
+context pane on Events also marks ready vs unavailable actions for the
+current row.
+
+### Which views still work offline
+
+All seven screens remain open and navigable when disconnected:
+
+- Monitor, Events, Signals read from the local audit cache. Data may be stale.
+- Audit and Changes always read from the local audit database.
+- Config always reads and writes `adiuvare.yaml` on disk.
+- AI falls back to local audit summarisation. Answers may be less detailed.
+
+### Which actions mutate live runtime state
+
+These actions send commands to the running runtime when connected:
+
+- confirm block
+- whitelist identity
+- monitor identity
+- unmonitor identity
+- unblock and monitor
+- ban IP
+- unban IP
+- apply config changes
+
+When disconnected, these actions are disabled in the Events and Audit screens.
+They cannot be triggered from buttons or keyboard shortcuts. Connect to a live
+runtime before taking a state-changing action.
+
 ## Navigation
 
 The current TUI has seven screens:
@@ -106,6 +163,11 @@ Current actions include:
 - ban IP
 - unban IP
 - export JSON
+
+Unavailable actions are shown with dimmed, dashed buttons. Hover a disabled
+button for the specific reason it is blocked, and read the action-bar hint for
+selection and disconnected-mode context. The identity context pane also marks
+ready vs unavailable actions for the current row.
 
 ![Events screen](../assets/tui/events.png)
 
@@ -197,9 +259,14 @@ It is meant for questions like:
 
 The header shows:
 
-- whether AI is connected
+- whether the TUI is connected to the runtime
 - which model is configured
+- that model reachability is not checked by this header
 - whether local fallback is available
+
+Runtime connection only means the operator console can reach the Adiuvare
+runtime snapshot/command surface. It does not prove that the configured model
+endpoint is reachable.
 
 ![AI Ask screen](../assets/tui/ai-ask.png)
 

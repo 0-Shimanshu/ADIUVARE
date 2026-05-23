@@ -6,20 +6,22 @@ the shortest path.
 
 ## 1. Install
 
+Adiuvare is installable from source. Install it directly from GitHub into your virtual environment::
+
 ```bash
-pip install adiuvare
+python -m pip install "git+https://github.com/0-Shimanshu/ADIUVARE.git"
 ```
 
 If you also want the TUI:
 
 ```bash
-pip install "adiuvare[tui]"
+python -m pip install "adiuvare[tui] @ git+https://github.com/0-Shimanshu/ADIUVARE.git"
 ```
 
 If you want the Redis backend too:
 
 ```bash
-pip install "adiuvare[redis]"
+python -m pip install "adiuvare[redis] @ git+https://github.com/0-Shimanshu/ADIUVARE.git"
 ```
 
 ## 2. Create `adiuvare.yaml`

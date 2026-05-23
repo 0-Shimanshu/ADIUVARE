@@ -181,6 +181,23 @@ async def charge():
     return {"ok": True}
 ```
 
+Route decorators preserve the original handler shape. If the decorated handler
+is synchronous, the wrapper is synchronous. If the handler is async, the wrapper
+is async.
+
+```python
+@app.get("/health")
+@guard.exempt()
+def flask_health():
+    return {"ok": True}
+
+
+@app.post("/review")
+@guard.protect(sensitivity="critical")
+async def async_review():
+    return {"ok": True}
+```
+
 ### protect()
 
 ```python

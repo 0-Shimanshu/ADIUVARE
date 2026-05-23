@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import yaml
 
-from cli import _find_cfg, _find_socket, _open_tui, _plain_terminal_wizard, _run_config_set, _run_init, _run_ip_ban, _run_ip_unban, _run_logs, _run_status
+from adiuvare.cli import _find_cfg, _find_socket, _open_tui, _plain_terminal_wizard, _run_config_set, _run_init, _run_ip_ban, _run_ip_unban, _run_logs, _run_status
 from adiuvare.core.models import AdiuvareEvent
 from adiuvare.state.audit_log import AuditLog
 
@@ -126,7 +126,7 @@ def test_find_socket_picks_newest_marker(tmp_path, monkeypatch):
     newer = tmp_path / "adiuvare-live.sock"
     newer.write_text("{}", encoding="utf-8")
 
-    monkeypatch.setattr("cli.tempfile.gettempdir", lambda: str(tmp_path))
+    monkeypatch.setattr("adiuvare.cli.tempfile.gettempdir", lambda: str(tmp_path))
     assert _find_socket() == str(newer)
 
 
@@ -157,7 +157,7 @@ def test_run_status_uses_runtime_snapshot_when_socket_is_live(tmp_path, monkeypa
     )
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(
-        "cli._runtime_link",
+        "adiuvare.cli._runtime_link",
         lambda: (
             "demo.sock",
             {
@@ -181,7 +181,7 @@ def test_open_tui_passes_live_socket_to_app(tmp_path, monkeypatch):
     cfg = tmp_path / "adiuvare.yaml"
     cfg.write_text("runtime:\n  audit_db_path: .adiuvare/audit.db\n  state_db_path: .adiuvare/state.db\n", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("cli._runtime_link", lambda: ("demo.sock", {"backend": "sqlite"}))
+    monkeypatch.setattr("adiuvare.cli._runtime_link", lambda: ("demo.sock", {"backend": "sqlite"}))
     seen = {}
 
     class FakeApp:
@@ -200,14 +200,14 @@ def test_open_tui_passes_live_socket_to_app(tmp_path, monkeypatch):
 
 
 def test_run_ip_ban_sends_runtime_command(monkeypatch, capsys):
-    monkeypatch.setattr("cli._find_socket", lambda: "demo.sock")
+    monkeypatch.setattr("adiuvare.cli._find_socket", lambda: "demo.sock")
 
     async def fake_command(self, name, args=None):
         assert name == "ban_ip"
         assert args == {"ip": "203.0.113.4"}
         return {"ok": True, "ip": "203.0.113.4", "banned_ip_count": 1}
 
-    monkeypatch.setattr("cli.EventStreamClient.command", fake_command)
+    monkeypatch.setattr("adiuvare.cli.EventStreamClient.command", fake_command)
     _run_ip_ban("203.0.113.4")
     out = capsys.readouterr().out
     assert "banned ip: 203.0.113.4" in out
@@ -215,14 +215,14 @@ def test_run_ip_ban_sends_runtime_command(monkeypatch, capsys):
 
 
 def test_run_ip_unban_sends_runtime_command(monkeypatch, capsys):
-    monkeypatch.setattr("cli._find_socket", lambda: "demo.sock")
+    monkeypatch.setattr("adiuvare.cli._find_socket", lambda: "demo.sock")
 
     async def fake_command(self, name, args=None):
         assert name == "unban_ip"
         assert args == {"ip": "203.0.113.4"}
         return {"ok": True, "ip": "203.0.113.4", "banned_ip_count": 0}
 
-    monkeypatch.setattr("cli.EventStreamClient.command", fake_command)
+    monkeypatch.setattr("adiuvare.cli.EventStreamClient.command", fake_command)
     _run_ip_unban("203.0.113.4")
     out = capsys.readouterr().out
     assert "unbanned ip: 203.0.113.4" in out
@@ -230,7 +230,7 @@ def test_run_ip_unban_sends_runtime_command(monkeypatch, capsys):
 
 
 def test_run_ip_ban_exits_when_runtime_is_offline(monkeypatch, capsys):
-    monkeypatch.setattr("cli._find_socket", lambda: None)
+    monkeypatch.setattr("adiuvare.cli._find_socket", lambda: None)
 
     try:
         _run_ip_ban("203.0.113.4")
