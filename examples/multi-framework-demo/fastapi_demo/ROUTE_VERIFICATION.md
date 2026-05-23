@@ -23,9 +23,6 @@ Observed response:
 
 ```
 HTTP/1.1 200 OK
-date: Mon, 18 May 2026 06:10:27 GMT
-server: uvicorn
-content-length: 77
 content-type: application/json
 ```
 
@@ -49,9 +46,6 @@ Observed response:
 
 ```
 HTTP/1.1 200 OK
-date: Mon, 18 May 2026 06:10:42 GMT
-server: uvicorn
-content-length: 109
 content-type: application/json
 ```
 
@@ -60,11 +54,11 @@ content-type: application/json
   "route": "protected",
   "message": "This stricter route passed Adiuvare inspection.",
   "verdict": "allow",
-  "score": 0.09
+  "score": <float>
 }
 ```
 
-**Result:** The protected route is inspected by Adiuvare with `policy: admin` and `sensitivity: critical`. The request scores below the flag threshold, so the verdict returns as `allow` and the request successfully evaluates. The view reads `verdict` and `score` directly out of `request.state.adiuvare_event`.
+**Result:** The route is inspected with `policy: admin` and `sensitivity: critical`. The request scores below the flag threshold, returning `allow`. The view extracts `verdict` and `score` from `request.state.adiuvare_event`.
 
 ---
 
@@ -82,9 +76,6 @@ Observed response:
 
 ```
 HTTP/1.1 200 OK
-date: Mon, 18 May 2026 06:11:31 GMT
-server: uvicorn
-content-length: 136
 content-type: application/json
 ```
 
@@ -97,7 +88,7 @@ content-type: application/json
 }
 ```
 
-**Result:** The review route successfully extracts the JSON payload and processes it. Since it is a benign payload string, it records a safe baseline below the evaluation threshold and assigns an explicit `allow` verdict.
+**Result:** A benign payload scores below the evaluation threshold, resulting in an `allow` verdict.
 
 ---
 
@@ -115,9 +106,6 @@ Observed response:
 
 ```
 HTTP/1.1 200 OK
-date: Mon, 18 May 2026 06:11:55 GMT
-server: uvicorn
-content-length: 213
 content-type: application/json
 ```
 
@@ -129,17 +117,17 @@ content-type: application/json
     "comment": "<script>alert(1)</script> UNION SELECT password FROM users"
   },
   "verdict": "flag",
-  "score": 0.44
+  "score": <float>
 }
 ```
 
-**Result:** The multi-vector malicious payload text triggers elevated signal anomalies. The calculated evaluation results in a score of `0.44`. This pushes beyond our configured `flag` limit `(0.25)`, but doesn't cross into the definitive `block` threshold `(0.80)`. The runtime assigns a `flag` status to the event context. Because `observe_only` is toggled off and the request did not fully trigger a drop, it flows gracefully to our backup return dictionary displaying the correct metrics.
+**Result:** The malicious payload scores above the `flag` limit (0.25) but below the `block` threshold (0.80). The runtime assigns a `flag` status to the event context, which the view returns.
 
 
 ### 5. Explicit Exempt Route (Per-Endpoint Override):
 
 ```bash
-curl -i http://127.0.0.1:8001/api/v1/explicit-exempt/
+curl -i http://127.0.0.1:8000/api/v1/explicit-exempt/
 ```
 
 Observed response:
@@ -153,13 +141,13 @@ content-type: application/json
 {"route":"explicit-exempt","message":"Bypassed via direct per-endpoint decorator."}
 ```
 
-**Result:** The explicit inline decorator explicitely exempts the endpoint from inspection. The endpoint resolves cleanly without going through Adiuvare inspection.
+**Result:** The `@guard.exempt()` decorator explicitly exempts the endpoint from Adiuvare inspection.
 
 
 ### 6. Advanced Policy Route (Self-Described Signals):
 
 ```bash
-curl -i -X POST http://127.0.0.1:8001/api/v1/advanced-policy/ \
+curl -i -X POST http://127.0.0.1:8000/api/v1/advanced-policy/ \
   -H "Content-Type: application/json" \
   -d '{"data_stream": "CRITICAL: override_core_state", "client_entropy": 0.97}'
 ```
@@ -174,16 +162,16 @@ content-type: application/json
 ```json
 {
   "route": "advanced-payload-review",
-  "self_described_internal_risk": 0.82,
+  "self_described_internal_risk": <float>,
   "final_adiuvare_verdict": "flag",
-  "final_adiuvare_score": 0.82
+  "final_adiuvare_score": <float>
 }
 ```
-**Result:** The logic evaluates custom rules against the payload and updates the `request.state.adiuvare_event` to reflect a flagged state.
+**Result:** The view evaluates custom rules against the payload and manually updates the `adiuvare_event` to reflect a flagged state.
 
 ---
 
-### 7. Global Policy Override (Decorator Priority)
+### 7. Global Policy Override
 
 Command:
 
@@ -203,15 +191,15 @@ content-type: application/json
   "route": "global-policy-override",
   "message": "Overrode global policy using @guard.policy decorator.",
   "verdict": "allow",
-  "score": 0.09
+  "score": <float>
 }
 ```
 
-**Result:** The global configuration maps `/api/v1/global-policy-override/` to the public `search` policy (where Track B is disabled by default). The `@guard.policy("admin", sensitivity="critical", trackB=True)` decorator takes priority, overriding the configuration and forcing Track B verification (with sensitivity elevated to critical).
+**Result:** The `@guard.policy()` decorator overrides the global configuration, enforcing the `admin` policy and `critical` sensitivity.
 
 ---
 
-### 8. Global Protect Override (Decorator Priority)
+### 8. Global Protect Override
 
 Command:
 
@@ -231,11 +219,11 @@ content-type: application/json
   "route": "global-protect-override",
   "message": "Overrode global protect rule using @guard.protect decorator.",
   "verdict": "allow",
-  "score": 0.09
+  "score": <float>
 }
 ```
 
-**Result:** The global configuration maps `/api/v1/global-protect-override/` to an internal setting with `trackB: False`. The `@guard.protect(sensitivity="critical", trackB=True)` decorator takes precedence, executing the Track B evaluation and promoting the sensitivity profile.
+**Result:** The `@guard.protect()` decorator overrides the global configuration, elevating sensitivity to `critical`.
 
 ---
 
