@@ -348,9 +348,9 @@ def test_event_stream_client_subscribes_to_redis_rows(monkeypatch):
 
 def test_unix_event_stream_uses_tempfile_dir():
     stream = UnixSocketEventStream(name="test")
-    assert str(Path(tempfile.gettempdir())) in stream.path
+    assert Path(stream.path).parent == Path(tempfile.gettempdir())
 
 
 def test_redis_event_stream_uses_tempfile_dir():
     stream = RedisEventStream(project="test", redis_url="redis://localhost")
-    assert str(Path(tempfile.gettempdir())) in stream.path
+    assert Path(stream.path).parent == Path(tempfile.gettempdir())
