@@ -87,9 +87,12 @@ def build() -> None:
             str(out_file),
         ]
 
-    subprocess.run(cmd, check=True, env=env)
-    print(f"Built: {out_file}")
+    print(f"Using compiler: {cc}")
+    print(f"Building library for {system}...")
 
+    subprocess.run(cmd, check=True, env=env)
+
+    print(f"Built successfully: {out_file}")
 
 if __name__ == "__main__":
     build()
