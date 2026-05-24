@@ -48,10 +48,10 @@ That approach breaks down quickly.
 - A legitimate request can get blocked just because it contains suspicious text.
 - Slight formatting changes can slip past brittle pattern checks.
 - A trusted identity and a brand-new identity get treated the same way if the
-  current request looks similar.
+  current request looks similar
 
 Adiuvare is built around a different idea: score risk, do not just match a
-rule.
+rule
 
 ## Risk scoring, not rule filters
 
