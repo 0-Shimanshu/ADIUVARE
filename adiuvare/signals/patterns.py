@@ -47,11 +47,57 @@ ssti_pats = [
 ]
 
 nosql_pats = [
+    
     (_re.compile(r'\{\s*"[^"]{1,40}"\s*:\s*\{\s*"\$(?:ne|gt|gte|lt|lte|in|nin|regex|where)"\s*:'),0.66,"nosql_nested_op"),
     (_re.compile(r'\{\s*"\$(?:ne|gt|gte|lt|lte|in|nin|regex|exists)"\s*:\s*(?:null|true|false|-?\d+|".{0,80}"|\[.{0,120}\])\s*\}'),0.68,"nosql_top_level_op"),
     (_re.compile(r'\{\s*"\$where"\s*:\s*".{1,80}"\s*\}'),0.74,"nosql_where"),
 ]
 
+secret_pats = [
+    # Bearer tokens (JWT-like)
+    (
+        _re.compile(r"(?i)\bauthorization\s*:\s*bearer\s+[a-zA-Z0-9\-._~+/]+=*"),
+        0.95,
+        "bearer_token",
+    ),
+
+    # GitHub Personal Access Token
+    (
+        _re.compile(r"\bgh[pousr]_[A-Za-z0-9]{20,}\b"),
+        0.96,
+        "github_token",
+    ),
+
+    # AWS Access Key ID
+    (
+        _re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
+        0.95,
+        "aws_access_key",
+    ),
+
+    # Generic API key assignment
+    (
+        _re.compile(
+            r'(?i)\b(api[_-]?key|secret|token)\b\s*[:=]\s*[\'"]?[A-Za-z0-9_\-]{16,}[\'"]?'
+        ),
+        0.90,
+        "api_key",
+    ),
+
+    # RSA Private Key
+    (
+        _re.compile(r"-----BEGIN RSA PRIVATE KEY-----"),
+        0.99,
+        "rsa_private_key",
+    ),
+
+    # OpenSSH Private Key
+    (
+        _re.compile(r"-----BEGIN OPENSSH PRIVATE KEY-----"),
+        0.99,
+        "openssh_private_key",
+    ),
+]
 
 def _scan(pats, text: str) -> tuple[bool, float, str]:
     for pat, conf, label in pats:
@@ -96,3 +142,10 @@ def check_ssti(text: str) -> tuple[bool, float, str]:
 
 def check_nosql(text: str) -> tuple[bool, float, str]:
     return _scan(nosql_pats, text)
+
+def check_secret(text: str) -> tuple[bool, float, str]:
+    # Ignore fenced markdown code blocks
+    if text.strip().startswith("```") and text.strip().endswith("```"):
+        return False, 0.0, ""
+
+    return _scan(secret_pats, text)
