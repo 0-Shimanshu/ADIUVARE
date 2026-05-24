@@ -123,6 +123,27 @@ run `python -m adiuvare.cli status` or `python -m adiuvare.cli init --no-tui` fr
 root.
 
 More detail: [docs/installation.md](docs/installation.md)
+### Windows setup example
+
+Create and activate a virtual environment before installing:
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+```
+
+Install Adiuvare:
+
+```bash
+python -m pip install .
+```
+
+Verify installation:
+
+```bash
+adv status
+```
+
 
 ## License
 
