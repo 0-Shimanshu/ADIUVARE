@@ -2,9 +2,9 @@ from ..core.models import SignalResult
 
 _weights = {
     "payload": 0.40,
-    "behavior": 0.35,
-    "identity": 0.25,
-    "context": 0.10,
+    "behavior": 0.30,
+    "identity": 0.20,
+    "context": 0.05s,
     "ip_rep": 0.05,
 }
 
