@@ -56,7 +56,7 @@ nosql_pats = [
 secret_pats = [
     # Bearer tokens (JWT-like)
     (
-        _re.compile(r"(?i)\bauthorization\s*:\s*bearer\s+[a-zA-Z0-9\-._~+/]+=*"),
+        _re.compile(r"(?i)\bauthorization\s*:\s*bearer\s+[A-Za-z0-9._\-]+"),
         0.95,
         "bearer_token",
     ),
@@ -78,8 +78,8 @@ secret_pats = [
     # Generic API key assignment
     (
         _re.compile(
-            r'(?i)\b(api[_-]?key|secret|token)\b\s*[:=]\s*[\'"]?[A-Za-z0-9_\-]{16,}[\'"]?'
-        ),
+    r'(?i)\b(api[_-]?key|secret)\b\s*[:=]\s*[\'"]?[A-Za-z0-9_\-]{6,}[\'"]?'
+),
         0.90,
         "api_key",
     ),
@@ -149,3 +149,21 @@ def check_secret(text: str) -> tuple[bool, float, str]:
         return False, 0.0, ""
 
     return _scan(secret_pats, text)
+
+def check_ldap(text: str) -> tuple[bool, float, str]:
+    low = text.lower()
+
+    if "))(|(" not in low:
+        return (False, 0.0, "")
+
+    if all(f"({attr}=" not in low for attr in ("uid", "cn", "mail")):
+        return (False, 0.0, "")
+
+    if (
+        "(uid=" in low
+        or "(cn=" in low
+        or "(mail=" in low
+    ):
+        return (True, 0.82, "ldap_injection")
+
+    return (False, 0.0, "")
