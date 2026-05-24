@@ -8,7 +8,6 @@ from .patterns import (
     check_ldap,
     check_nosql,
     check_path,
-    check_secret,
     check_sql,
     check_ssti,
     check_xss,
