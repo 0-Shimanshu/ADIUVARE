@@ -30,6 +30,8 @@ def test_benign_matrix_stays_clean():
         "How does $(HOME) expansion work in Bash?",
         "render {{ user.name }} in the template",
         "Use $gt for greater-than filters in Mongo docs",
+        "How do I write SELECT * FROM users in a tutorial?",
+        "How do I print <script> literally in docs?"
     ]
 
     for text in cases:
