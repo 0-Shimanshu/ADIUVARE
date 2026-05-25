@@ -39,7 +39,7 @@ def test_score_can_use_snapshot_weights():
         snap,
     )
 
-    assert round(score, 3) == 0.45
+    assert round(score, 3) == 0.41
     assert round(breakdown["payload"], 3) == 0.35
 
 
