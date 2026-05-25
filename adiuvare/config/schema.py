@@ -41,7 +41,7 @@ class AiConfig(BaseModel):
     """Describe how request-time AI review should reach the model endpoint."""
 
     enabled: bool = False
-    mode: str = "off"
+    mode: Literal["off", "assist", "critical", "async"] = "off"
     model: str = "llama3"
     base_url: str = "http://127.0.0.1:11434"
     api_key: str | None = None
