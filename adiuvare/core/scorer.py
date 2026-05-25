@@ -3,9 +3,9 @@ from ..core.models import SignalResult
 _weights = {
     "payload": 0.40,
     "behavior": 0.35,
-    "identity": 0.25,
-    "context": 0.10,
-    "ip_rep": 0.05,
+    "identity": 0.15,
+    "context": 0.06,
+    "ip_rep": 0.04,
 }
 
 
@@ -19,6 +19,9 @@ def compute_score(sig_res: dict[str, SignalResult], snap=None) -> tuple[float, d
         weights["payload"] = snap.payload_weight
         weights["behavior"] = snap.behavior_weight
         weights["identity"] = snap.identity_weight
+        total_w = sum(weights.values())
+        if total_w > 0:
+            weights = {k: v / total_w for k, v in weights.items()}
 
     for name, res in sig_res.items():
         weight = weights.get(name, 0.0)
