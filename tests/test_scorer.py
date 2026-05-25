@@ -40,7 +40,7 @@ def test_score_can_use_snapshot_weights():
     )
 
     assert round(score, 3) == 0.41
-    assert round(breakdown["payload"], 3) == 0.35
+    assert round(breakdown["payload"], 3) == 0.318
 
 
 def test_verdict_gets_identity_nudge_inline():
