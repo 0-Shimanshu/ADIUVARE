@@ -54,10 +54,13 @@ nosql_pats = [
 
 
 def _scan(pats, text: str) -> tuple[bool, float, str]:
+    # Returns the highest-confidence match across all patterns.
+    # Tiebreak: first match wins by position (strictly-greater check).
+    best = (False, 0.0, "")
     for pat, conf, label in pats:
-        if pat.search(text):
-            return True, conf, label
-    return False, 0.0, ""
+        if pat.search(text) and conf > best[1]:
+            best = (True, conf, label)
+    return best
 
 
 def _bool_taut_hit(text: str) -> bool:
