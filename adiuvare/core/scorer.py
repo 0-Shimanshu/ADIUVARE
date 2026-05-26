@@ -1,12 +1,15 @@
-from ..core.models import SignalResult
+﻿from ..core.models import SignalResult
 
 _weights = {
     "payload": 0.40,
-    "behavior": 0.35,
+    "behavior": 0.30,
     "identity": 0.15,
-    "context": 0.06,
-    "ip_rep": 0.04,
+    "context": 0.10,
+    "ip_rep": 0.05,
 }
+
+_total_w = sum(_weights.values())
+_weights = {k: v / _total_w for k, v in _weights.items()}
 
 
 def compute_score(sig_res: dict[str, SignalResult], snap=None) -> tuple[float, dict[str, float]]:
@@ -16,12 +19,23 @@ def compute_score(sig_res: dict[str, SignalResult], snap=None) -> tuple[float, d
 
     weights = dict(_weights)
     if snap:
-        weights["payload"] = snap.payload_weight
-        weights["behavior"] = snap.behavior_weight
-        weights["identity"] = snap.identity_weight
+        snap_weights = {
+            "payload": snap.payload_weight,
+            "behavior": snap.behavior_weight,
+            "identity": snap.identity_weight,
+        }
+
+        for k, v in snap_weights.items():
+            if v < 0:
+                raise ValueError(f"Weight for '{k}' must be non-negative, got {v}")
+
+        total_snap = sum(snap_weights.values())
+        if total_snap == 0:
+            raise ValueError("All weights sum to zero - cannot normalize.")
+
+        weights.update(snap_weights)
         total_w = sum(weights.values())
-        if total_w > 0:
-            weights = {k: v / total_w for k, v in weights.items()}
+        weights = {k: v / total_w for k, v in weights.items()}
 
     for name, res in sig_res.items():
         weight = weights.get(name, 0.0)
