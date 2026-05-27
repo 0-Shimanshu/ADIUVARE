@@ -42,16 +42,20 @@ def _is_discussion_style_sql(text: str) -> bool:
     )
 
 _LDAP_PAT = re.compile(
-    r"\*\)\s*\(\s*(?:uid|cn|mail)\s*=\s*\*?\s*\)\s*\)\s*\(\|\s*\(\s*(?:uid|cn|mail)\s*=",
+    r"\*\)\s*\(\s*(?:uid|cn|mail)\s*=\s*\*?\s*\)\s*\)\s*\(\s*\|\s*\(\s*(?:uid|cn|mail)\s*=",
     re.IGNORECASE,
 )
 
 
 def check_ldap(text: str) -> tuple[bool, float, str]:
     low = text.lower()
-    if "))(|(" not in low:
+    # Collapse whitespace for fast-path checks so that spacing variants like
+    # ") ) ( | (" are not silently dropped before _LDAP_PAT (which uses \s*)
+    # can evaluate them.  The regex itself handles the authoritative detection.
+    collapsed = re.sub(r"\s+", "", low)
+    if "))(|(" not in collapsed:
         return (False, 0.0, "")
-    if all(f"({attr}=" not in low for attr in ("uid", "cn", "mail")):
+    if all(f"({attr}=" not in collapsed for attr in ("uid", "cn", "mail")):
         return (False, 0.0, "")
     if _LDAP_PAT.search(text):
         return (True, 0.82, "ldap_injection")

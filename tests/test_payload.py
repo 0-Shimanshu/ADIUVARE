@@ -559,6 +559,94 @@ def test_payload_keeps_uid_filter_tutorial_clean():
     assert res.score == 0.0
 
 
+# ---------------------------------------------------------------------------
+# Regression tests: whitespace-evasion bypass (GitHub issue)
+# The fast-path checks previously required zero-space exact matches, so a
+# payload like "*)(uid=*) ) ( | (uid=" would be silently dropped before
+# _LDAP_PAT (which uses \s*) could evaluate it.
+# ---------------------------------------------------------------------------
+
+
+def test_payload_marks_spaced_ldap_injection_probe():
+    """Spaces between LDAP metacharacters must not bypass detection."""
+    ctx = RequestContext(
+        identity="u1",
+        payload="*)(uid=*) ) ( | (uid=",
+        url="/search",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/search",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.7
+
+
+def test_payload_marks_heavily_spaced_ldap_injection_probe():
+    """Multiple spaces in every gap must still be caught."""
+    ctx = RequestContext(
+        identity="u1",
+        payload="*)(uid=*)  )  (  |  (uid=",
+        url="/search",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/search",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.7
+
+
+def test_payload_marks_spaced_cn_ldap_injection_probe():
+    """Spacing evasion using cn attribute must be caught."""
+    ctx = RequestContext(
+        identity="u1",
+        payload="*)(cn=*) ) ( | (cn=",
+        url="/search",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/search",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.7
+
+
+def test_payload_marks_spaced_mail_ldap_injection_probe():
+    """Spacing evasion using mail attribute must be caught."""
+    ctx = RequestContext(
+        identity="u1",
+        payload="*)(mail=*) ) ( | (mail=",
+        url="/search",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/search",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.7
+
+
+def test_payload_marks_tab_separated_ldap_injection_probe():
+    """Tab characters as whitespace must not bypass detection."""
+    ctx = RequestContext(
+        identity="u1",
+        payload="*)(uid=*)\t)\t(\t|\t(uid=",
+        url="/search",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/search",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.7
+
+
 def test_payload_marks_etc_passwd_probe():
     ctx = RequestContext(
         identity="u1",
