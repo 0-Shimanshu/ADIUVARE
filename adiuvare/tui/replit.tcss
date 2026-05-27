@@ -345,7 +345,6 @@ Scrollbar {
     border: solid #21262d;
     background: #161b22;
     padding: 1 2;
-    overflow-y: auto;
 }
 
 #events-context-panel {
@@ -353,7 +352,6 @@ Scrollbar {
     border: solid #21262d;
     background: #161b22;
     padding: 1 2;
-    overflow-y: auto;
 }
 
 #events-action-bar {
@@ -378,6 +376,7 @@ Scrollbar {
     color: #8b949e;
     content-align: left middle;
 }
+
 
 /* ══════════════════════════════════════════════════════════════
    PAGE 3 — CONFIG

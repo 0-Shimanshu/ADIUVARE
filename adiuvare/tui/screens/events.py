@@ -1,9 +1,14 @@
 from collections import Counter
 from typing import TYPE_CHECKING, cast
 
+from rich.console import Group
+from rich.table import Table
 from rich.text import Text
+from textual.css.scalar import Scalar
+from textual.layouts.vertical import VerticalLayout
 from textual.app import ComposeResult
 from textual.binding import Binding
+from textual import events
 from textual.containers import Horizontal, HorizontalScroll, Vertical, VerticalScroll
 from textual.widgets import Button, DataTable, Input, Static
 
@@ -32,6 +37,7 @@ class EventsScreen(WorkspaceView):
     shortcut_hints = "[1-7] tabs  [f] filter  [c] confirm  [w] whitelist  [m] monitor  [e] export"
     primary_id = "events-table"
     search_id = "events-identity-filter"
+    responsive_breakpoint = 90
 
     BINDINGS = [
         Binding("c", "confirm_block", "Confirm block", show=False),
@@ -81,6 +87,23 @@ class EventsScreen(WorkspaceView):
         table.cursor_type = "row"
         table.add_columns("VERDICT", "SCORE", "IDENTITY", "ENDPOINT", "IP", "DOMINANT", "AGE")
         self.refresh_view()
+        self._apply_responsive_layout()
+
+    def on_resize(self, event: events.Resize) -> None:
+        self._apply_responsive_layout()
+
+    def _apply_responsive_layout(self) -> None:
+        body = self.query_one("#events-body")
+        right_col = self.query_one("#events-right-col")
+
+        if self.size.width <= self.responsive_breakpoint:
+            body.styles.set_rule("layout", VerticalLayout())
+            right_col.styles.set_rule("width", Scalar.parse("1fr"))
+            right_col.styles.set_rule("min_width", Scalar.parse("0"))
+        else:
+            body.styles.clear_rule("layout")
+            right_col.styles.clear_rule("width")
+            right_col.styles.clear_rule("min_width")
 
     def on_input_changed(self, event: Input.Changed) -> None:
         if event.input.id in {"events-identity-filter", "events-verdict-filter"}:
@@ -297,44 +320,75 @@ class EventsScreen(WorkspaceView):
         breakdown = event.get("breakdown") or {}
         detail = event.get("detail") or {}
 
-        label_pad = 10
+        title = Text("EVENT DETAIL", style=f"{PALETTE['dim']} bold")
+        identity = str(event.get("identity", "?"))
+        endpoint = str(event.get("endpoint", "?"))
+        ip = str(event.get("ip", "-") or "-")
 
-        def format_kv(key: str, value: str, color: str = "") -> str:
-            text_color = color or PALETTE["text"]
-            return f"[{PALETTE['dim']}]{key:<{label_pad}}[/] [{text_color}]{value}[/]"
+        kv = Table.grid(padding=(0, 1))
+        kv.expand = True
+        kv.add_column(style=PALETTE["dim"], no_wrap=True)
+        kv.add_column(ratio=1)
+        kv.add_row("Identity", Text(identity, style=PALETTE["text"]))
+        kv.add_row(
+            "Endpoint",
+            Text(endpoint, style=PALETTE["dim"], overflow="ellipsis", no_wrap=True),
+        )
+        kv.add_row("IP", Text(ip, style=PALETTE["dim"]))
 
-        lines = [
-            f"[{PALETTE['dim']} bold]EVENT DETAIL[/]",
-            format_kv("Identity", str(event.get("identity", "?"))),
-            format_kv("Endpoint", f"[{PALETTE['dim']}]{event.get('endpoint', '?')}[/]"),
-            format_kv("IP", str(event.get("ip", "-") or "-")),
+        score_line = Text.from_markup(
             (
                 f"[{PALETTE['dim']}]Score[/] {render_score_bar(score, 8)} "
                 f"[{PALETTE['cyan']}]{score:.4f}[/]  "
                 f"[{PALETTE['dim']}]Verdict[/] "
                 f"[{verdict_color}]{decision_icon(verdict)} {verdict.upper()}[/]"
-            ),
-        ]
+            )
+        )
+
+        renderables: list[object] = [title, kv, score_line]
 
         if isinstance(breakdown, dict) and breakdown:
-            lines.extend(["", styled_separator(), f"[{PALETTE['very_dim']}]SIGNAL BREAKDOWN[/]", ""])
+            breakdown_table = Table.grid(padding=(0, 1))
+            breakdown_table.expand = True
+            breakdown_table.add_column(style=PALETTE["dim"], no_wrap=True)
+            breakdown_table.add_column(ratio=1)
+            breakdown_table.add_column(justify="right", no_wrap=True, style=PALETTE["cyan"])
+
             peak = max(breakdown.values()) if breakdown.values() else 1.0
             for name, value in sorted(breakdown.items(), key=lambda item: item[1], reverse=True):
                 value_f = float(value)
                 bar = render_signal_bar(value_f, peak, 15)
-                lines.append(f"  [{PALETTE['dim']}]{name:<12}[/] {bar} [{PALETTE['cyan']}]{value_f:.4f}[/]")
+                breakdown_table.add_row(str(name), Text.from_markup(bar), f"{value_f:.4f}")
+
+            renderables.extend(
+                [
+                    Text(""),
+                    Text.from_markup(styled_separator()),
+                    Text.from_markup(f"[{PALETTE['very_dim']}]SIGNAL BREAKDOWN[/]"),
+                    Text(""),
+                    breakdown_table,
+                ]
+            )
 
         ai = detail.get("ai") if isinstance(detail, dict) else None
         if isinstance(ai, dict) and ai:
-            lines.extend([
-                "",
-                styled_separator(),
-                f"[{PALETTE['very_dim']}]AI DETAIL[/]",
-                format_kv("AI verdict", str(ai.get("verdict", "n/a")), PALETTE["purple"]),
-                format_kv("Confidence", f"{ai.get('confidence', 0):.2f}", PALETTE["cyan"]),
-            ])
+            ai_table = Table.grid(padding=(0, 1))
+            ai_table.expand = True
+            ai_table.add_column(style=PALETTE["dim"], no_wrap=True)
+            ai_table.add_column(ratio=1)
+            ai_table.add_row("AI verdict", Text(str(ai.get("verdict", "n/a")), style=PALETTE["purple"]))
+            ai_table.add_row("Confidence", Text(f"{ai.get('confidence', 0):.2f}", style=PALETTE["cyan"]))
 
-        panel.update("\n".join(lines))
+            renderables.extend(
+                [
+                    Text(""),
+                    Text.from_markup(styled_separator()),
+                    Text.from_markup(f"[{PALETTE['very_dim']}]AI DETAIL[/]"),
+                    ai_table,
+                ]
+            )
+
+        panel.update(Group(*renderables))
 
     def _render_context(self) -> None:
         panel = self.query_one("#events-context-text", Static)
@@ -358,16 +412,15 @@ class EventsScreen(WorkspaceView):
         is_whitelisted = identity in whitelisted
 
         states = self._action_states(event)
+        title = Text("IDENTITY CONTEXT", style=f"{PALETTE['dim']} bold")
 
-        label_pad = 12
+        context_table = Table.grid(padding=(0, 1))
+        context_table.expand = True
+        context_table.add_column(style=PALETTE["dim"], no_wrap=True)
+        context_table.add_column(ratio=1)
+        context_table.add_row("Identity", Text(identity, style=PALETTE["text"]))
 
-        def format_kv(key: str, value: str, color: str = "") -> str:
-            text_color = color or PALETTE["text"]
-            return f"[{PALETTE['dim']}]{key:<{label_pad}}[/] [{text_color}]{value}[/]"
-
-        lines = [
-            f"[{PALETTE['dim']} bold]IDENTITY CONTEXT[/]",
-            format_kv("Identity", identity),
+        status_line_1 = Text.from_markup(
             (
                 f"[{PALETTE['dim']}]Monitored[/] "
                 f"[{PALETTE['green'] if is_monitored else PALETTE['dim']}]"
@@ -375,7 +428,9 @@ class EventsScreen(WorkspaceView):
                 f"[{PALETTE['dim']}]Blocked[/] "
                 f"[{PALETTE['red'] if is_blocked else PALETTE['dim']}]"
                 f"{'yes' if is_blocked else 'no'}[/]"
-            ),
+            )
+        )
+        status_line_2 = Text.from_markup(
             (
                 f"[{PALETTE['dim']}]Banned IP[/] "
                 f"[{PALETTE['red'] if is_banned else PALETTE['dim']}]"
@@ -383,22 +438,34 @@ class EventsScreen(WorkspaceView):
                 f"[{PALETTE['dim']}]Whitelisted[/] "
                 f"[{PALETTE['green'] if is_whitelisted else PALETTE['dim']}]"
                 f"{'yes' if is_whitelisted else 'no'}[/]"
-            ),
-            "",
-            styled_separator(),
-            f"[{PALETTE['very_dim']}]AVAILABLE ACTIONS[/]",
-            f"[{PALETTE['very_dim']}]● ready  ○ unavailable (hover buttons for detail)[/]",
-            "",
-            format_action_legend_line("Confirm block", states["events-confirm"], "C"),
-            format_action_legend_line("Whitelist", states["events-whitelist"], "W"),
-            format_action_legend_line("Monitor identity", states["events-monitor"], "M"),
-            format_action_legend_line("Unmonitor identity", states["events-unmonitor"]),
-            format_action_legend_line("Unblock + monitor", states["events-unblock-monitor"]),
-            format_action_legend_line("Ban IP", states["events-ban-ip"]),
-            format_action_legend_line("Unban IP", states["events-unban-ip"]),
-            format_action_legend_line("Export JSON", states["events-export"], "E"),
+            )
+        )
+
+        action_lines = [
+            Text.from_markup(format_action_legend_line("Confirm block", states["events-confirm"], "C")),
+            Text.from_markup(format_action_legend_line("Whitelist", states["events-whitelist"], "W")),
+            Text.from_markup(format_action_legend_line("Monitor identity", states["events-monitor"], "M")),
+            Text.from_markup(format_action_legend_line("Unmonitor identity", states["events-unmonitor"])),
+            Text.from_markup(format_action_legend_line("Unblock + monitor", states["events-unblock-monitor"])),
+            Text.from_markup(format_action_legend_line("Ban IP", states["events-ban-ip"])),
+            Text.from_markup(format_action_legend_line("Unban IP", states["events-unban-ip"])),
+            Text.from_markup(format_action_legend_line("Export JSON", states["events-export"], "E")),
         ]
-        panel.update("\n".join(lines))
+
+        panel.update(
+            Group(
+                title,
+                context_table,
+                status_line_1,
+                status_line_2,
+                Text(""),
+                Text.from_markup(styled_separator()),
+                Text.from_markup(f"[{PALETTE['very_dim']}]AVAILABLE ACTIONS[/]"),
+                Text.from_markup(f"[{PALETTE['very_dim']}]● ready  ○ unavailable (hover buttons for detail)[/]"),
+                Text(""),
+                *action_lines,
+            )
+        )
 
     def _has_filter(self) -> bool:
         return any(
