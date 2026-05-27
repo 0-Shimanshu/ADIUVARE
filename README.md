@@ -321,3 +321,128 @@ Known detection boundaries and false-positive cases are documented in:
 - [FastAPI](docs/integrations/fastapi.md)
 - [Flask](docs/integrations/flask.md)
 - [Django](docs/integrations/django.md)
+
+## Troubleshooting
+
+### `adv: command not found`
+
+This means the `adv` CLI was not installed into the active environment, or the
+wrong environment is active.
+
+**Check which Python is active:**
+
+```bash
+which python        # macOS / Linux / Git Bash
+where python        # Windows CMD
+```
+
+**Check whether `adv` is available in that environment:**
+
+```bash
+python -m adiuvare.cli status
+```
+
+If that works, your environment is correct but the `adv` script was not put on
+`PATH`. Re-activate the virtual environment and try again:
+
+```bash
+# macOS / Linux
+source .venv/bin/activate
+
+# Windows PowerShell
+.venv\Scripts\Activate.ps1
+
+# Windows CMD
+.venv\Scripts\activate.bat
+```
+
+If that still does not work, reinstall into the active environment:
+
+```bash
+python -m pip install .
+```
+
+---
+
+### `runtime: offline` in `adv status`
+
+`offline` means the guard has not been started by a running application yet.
+The CLI reads the local audit database and config file; it does not need the
+app to be running to show config and audit history.
+
+Start your application and then re-run `adv status`. The runtime field will
+update once the guard has initialised.
+
+If the app is running and the status still shows `offline`, check that
+`adiuvare.yaml` exists in the directory where you are running `adv`:
+
+```bash
+adv status          # run from the same directory as adiuvare.yaml
+```
+
+Or generate a fresh config:
+
+```bash
+adv init --no-tui
+```
+
+---
+
+### Install fails with `error: Microsoft Visual C++ required` (Windows)
+
+Some dependencies need a C compiler on Windows. Install the
+[Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+and then retry:
+
+```bash
+python -m pip install .
+```
+
+---
+
+### Install fails with `python-dev` or `gcc` errors (Linux / macOS)
+
+Install the system build tools first:
+
+```bash
+# Debian / Ubuntu
+sudo apt install python3-dev build-essential
+
+# macOS (Xcode command-line tools)
+xcode-select --install
+```
+
+Then retry the install.
+
+---
+
+### How to verify the installation worked
+
+Run the following after installing:
+
+```bash
+adv status
+```
+
+You should see output similar to:
+
+```text
+config: path/to/adiuvare.yaml
+runtime: offline
+framework: fastapi
+instances: single
+observe_only: False
+ai_mode: off
+audit_db: .adiuvare/audit.db
+```
+
+If `adv status` exits without error and shows a config path, the installation
+is correct. `runtime: offline` is expected until your application starts.
+
+To also confirm the Python import works:
+
+```bash
+python -c "import adiuvare; print('ok')"
+```
+
+A clean `ok` means the package is importable in the active environment.

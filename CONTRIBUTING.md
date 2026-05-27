@@ -91,6 +91,123 @@ python -m pytest tests/test_tui.py tests/test_audit.py
 
 > Keep local machine files out of commits unless the change really belongs in the repo. In practice that usually means leaving `adiuvare.yaml` and any local-only `conftest.py` changes alone.
 
+## Troubleshooting the dev environment
+
+### Windows: choosing a terminal
+
+The setup commands in this guide use Unix-style shell syntax. On Windows, use
+one of these:
+
+- **Git Bash** (recommended) — ships with Git for Windows, runs `source`,
+  `which`, and most Unix commands without changes
+- **PowerShell** — works, but use the PowerShell-specific activate command
+  shown below
+- **CMD** — works for basic commands; activate with `.venv\Scripts\activate.bat`
+
+Avoid mixing terminals mid-session. Pick one and stay in it.
+
+---
+
+### Activating the virtual environment (Windows)
+
+```powershell
+# PowerShell
+.venv\Scripts\Activate.ps1
+```
+
+If PowerShell blocks the script with an execution-policy error, run this once:
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+Then activate again.
+
+```bash
+# Git Bash
+source .venv/bin/activate
+```
+
+---
+
+### `pip install -e ".[dev]"` fails on Windows
+
+Some packages need a C compiler. Install
+[Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+first, then retry.
+
+If the error mentions a specific package, try upgrading pip and setuptools
+before retrying the install:
+
+```bash
+python -m pip install --upgrade pip setuptools wheel
+python -m pip install -e ".[dev]"
+```
+
+---
+
+### `adv: command not found` after editable install
+
+The `adv` script is created inside the virtual environment's `bin` (or
+`Scripts` on Windows) directory. If it is not found, the environment is
+probably not active.
+
+Confirm the right Python is in use:
+
+```bash
+which python        # Git Bash / macOS / Linux
+where python        # CMD
+```
+
+Then re-activate and try again. You can also run the CLI without the script:
+
+```bash
+python -m adiuvare.cli status
+```
+
+---
+
+### How to verify the dev environment is working
+
+After completing setup, run through this checklist:
+
+**1. Package is importable:**
+
+```bash
+python -c "import adiuvare; print('ok')"
+```
+
+**2. CLI responds:**
+
+```bash
+adv status
+```
+
+Expected output includes a `config:` path and `runtime: offline`. That is
+normal — `offline` means no app is running yet, not that anything is broken.
+
+**3. Tests pass:**
+
+```bash
+python -m pytest
+```
+
+All tests should pass before you start making changes. If something fails on a
+clean clone, open an issue before continuing.
+
+---
+
+### `python -m pytest` collects zero tests
+
+Make sure you installed the `dev` extras:
+
+```bash
+python -m pip install -e ".[dev]"
+```
+
+Then run pytest again from the repo root (not from inside a subdirectory).
+
+
 ## Architecture
 
 Adiuvare is intentionally compact. Most work touches one of these layers:
