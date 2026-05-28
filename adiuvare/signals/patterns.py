@@ -66,12 +66,17 @@ def _bool_taut_hit(text: str) -> bool:
         return True
     return False
 
-_DISCUSSION_RE = _re.compile(
-    r"(?i)\b(how|what|why|when|does|do|can|is|are|explain|example|tutorial|docs?|print|write|show)\b"
+_QUESTION_RE = _re.compile(
+    r"(?i)^(how|what|why|when|can|does|do|is|are)\b.*\?"
 )
 
 def _is_discussion_context(text: str) -> bool:
-    return bool(_DISCUSSION_RE.search(text))
+    return bool(_QUESTION_RE.search(text))
+
+_EXECUTABLE_SCRIPT_RE = _re.compile(r"(?i)<\s*script\b[^>]*>[^<\s]")
+
+def _is_executable_xss(text: str) -> bool:
+    return bool(_EXECUTABLE_SCRIPT_RE.search(text))
 
 def check_sql(text: str) -> tuple[bool, float, str]:
     if _bool_taut_hit(text):
