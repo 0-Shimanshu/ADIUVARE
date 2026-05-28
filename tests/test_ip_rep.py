@@ -1,9 +1,8 @@
 import asyncio
 
-
-
 from adiuvare.core.models import RequestContext
 from adiuvare.signals.ip_rep import IPRepSignal
+from adiuvare.config.schema import AdiuvareConfig, RuntimeConfig
 
 
 # ---------------------------------------------------------------------------
@@ -22,8 +21,9 @@ def make_ctx(ip: str, headers: dict | None = None) -> RequestContext:
     )
 
 
-def run(ip: str, headers: dict | None = None):
-    return asyncio.run(IPRepSignal().extract(make_ctx(ip, headers)))
+def run(ip: str, headers: dict | None = None, trusted_proxies: list[str] | None = None):
+    cfg = AdiuvareConfig(runtime=RuntimeConfig(trusted_proxies=trusted_proxies or []))
+    return asyncio.run(IPRepSignal(cfg).extract(make_ctx(ip, headers)))
 
 
 # ---------------------------------------------------------------------------
@@ -92,11 +92,39 @@ def test_partial_ip_scores_012():
 # Tor exit hint
 # ---------------------------------------------------------------------------
 
-def test_tor_exit_header_scores_035():
-    result = run("8.8.8.8", headers={"x-tor-exit": "1"})
+def test_tor_exit_header_from_trusted_proxy_scores_035():
+    """x-tor-exit is only trusted when the connecting IP is a known proxy."""
+    result = run("1.2.3.4", headers={"x-tor-exit": "1"}, trusted_proxies=["1.2.3.4"])
     assert result.score == 0.35
     assert result.reason == "tor_hint"
-    assert result.detail.get("ip") == "8.8.8.8"
+
+
+def test_tor_exit_header_from_untrusted_client_is_ignored():
+    """Any client can send x-tor-exit — ignored without proxy trust."""
+    result = run("8.8.8.8", headers={"x-tor-exit": "1"})
+    assert result.score == 0.0
+    assert result.reason == "ip_clean"
+
+
+def test_tor_exit_header_from_unlisted_proxy_is_ignored():
+    """IP not in trusted_proxies list must not be trusted."""
+    result = run("8.8.8.8", headers={"x-tor-exit": "1"}, trusted_proxies=["1.2.3.4"])
+    assert result.score == 0.0
+    assert result.reason == "ip_clean"
+
+
+def test_no_trusted_proxies_by_default():
+    """Default config has no trusted_proxies — tor hint always ignored."""
+    result = run("8.8.8.8", headers={"x-tor-exit": "1"})
+    assert result.score == 0.0
+    assert result.reason == "ip_clean"
+
+
+def test_tor_hint_falls_through_to_noisy_net_when_not_trusted():
+    """Without proxy trust, noisy net prefix still fires."""
+    result = run("185.220.0.1", headers={"x-tor-exit": "1"})
+    assert result.score == 0.20
+    assert result.reason == "noisy_net"
 
 
 def test_tor_exit_header_not_set_does_not_trigger():
@@ -160,8 +188,8 @@ def test_another_clean_public_ip_scores_zero():
 # Tor exit takes priority over noisy net
 # ---------------------------------------------------------------------------
 
-def test_tor_hint_takes_priority_over_noisy_net():
-    # A noisy-net IP that also carries the tor hint should score as tor
-    result = run("185.220.0.1", headers={"x-tor-exit": "1"})
+def test_tor_hint_takes_priority_over_noisy_net_when_trusted():
+    # Tor hint only fires when the connecting IP is a trusted proxy
+    result = run("185.220.0.1", headers={"x-tor-exit": "1"}, trusted_proxies=["185.220.0.1"])
     assert result.score == 0.35
     assert result.reason == "tor_hint"
