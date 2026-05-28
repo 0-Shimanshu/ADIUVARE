@@ -528,14 +528,7 @@ class Guard:
                 "sink_mode": sink_mode,
             }
 
-            if asyncio.iscoroutinefunction(fn):
-                @wraps(fn)
-                async def wrap(*args, **kwargs):
-                    return await fn(*args, **kwargs)
-            else:
-                @wraps(fn)
-                def wrap(*args, **kwargs):
-                    return fn(*args, **kwargs)
+            wrap = _wrap_route_handler(fn)
 
             wrap._adiuvare_cfg = cfg
             return wrap
@@ -546,14 +539,7 @@ class Guard:
         """Mark a route as exempt from Adiuvare request inspection."""
 
         def deco(fn):
-            if asyncio.iscoroutinefunction(fn):
-                @wraps(fn)
-                async def wrap(*args, **kwargs):
-                    return await fn(*args, **kwargs)
-            else:
-                @wraps(fn)
-                def wrap(*args, **kwargs):
-                    return fn(*args, **kwargs)
+            wrap = _wrap_route_handler(fn)
 
             wrap._adiuvare_exempt = True
             return wrap

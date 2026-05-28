@@ -103,7 +103,7 @@ class PayloadSignal(SoftSignal):
         if ldap_pat[0]:
             hits.append((ldap_pat[1], ldap_pat[2]))
         if secret_pat[0]:
-            hits.append((max(secret_pat[1], 0.95), secret_pat[2]))
+            hits.append((secret_pat[1], secret_pat[2]))
 
         if _is_discussion_style_sql(text):
             hits = [h for h in hits if h[1] != "select_from"]

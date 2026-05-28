@@ -70,7 +70,7 @@ secret_pats = [
 
     # AWS Access Key ID
     (
-        _re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
+        _re.compile(r"\bAKIA[0-9A-Z]{16,}\b"),
         0.95,
         "aws_access_key",
     ),
@@ -78,7 +78,7 @@ secret_pats = [
     # Generic API key assignment
     (
         _re.compile(
-    r'(?i)\b(api[_-]?key|secret)\b\s*[:=]\s*[\'"]?[A-Za-z0-9_\-]{6,}[\'"]?'
+    r'(?i)\b(api[_-]?key|secret)\b\s*[:=]\s*[\'"]?[A-Za-z0-9_\-]{16,}[\'"]?'
 ),
         0.90,
         "api_key",
@@ -98,6 +98,10 @@ secret_pats = [
         "openssh_private_key",
     ),
 ]
+_LDAP_PAT = _re.compile(
+    r"\(\s*(?:uid|cn|mail)\s*=\s*[^)]*\)\s*\)\s*\(\|\s*\(",
+    _re.IGNORECASE,
+)
 
 def _scan(pats, text: str) -> tuple[bool, float, str]:
     for pat, conf, label in pats:
@@ -144,26 +148,34 @@ def check_nosql(text: str) -> tuple[bool, float, str]:
     return _scan(nosql_pats, text)
 
 def check_secret(text: str) -> tuple[bool, float, str]:
-    # Ignore fenced markdown code blocks
-    if text.strip().startswith("```") and text.strip().endswith("```"):
-        return False, 0.0, ""
+    stripped = text.strip()
+
+    # Ignore only full fenced markdown code blocks
+    if stripped.startswith("```") and stripped.endswith("```"):
+        lines = stripped.splitlines()
+
+        # valid fenced block:
+        # ```lang(optional)
+        # content
+        # ```
+        if len(lines) >= 2 and lines[0].startswith("```") and lines[-1] == "```":
+            return False, 0.0, ""
 
     return _scan(secret_pats, text)
 
 def check_ldap(text: str) -> tuple[bool, float, str]:
     low = text.lower()
 
+    # Fast path: common LDAP injection structure
     if "))(|(" not in low:
         return (False, 0.0, "")
 
+    # Must contain known LDAP attributes
     if all(f"({attr}=" not in low for attr in ("uid", "cn", "mail")):
         return (False, 0.0, "")
 
-    if (
-        "(uid=" in low
-        or "(cn=" in low
-        or "(mail=" in low
-    ):
+    # Validate using regex pattern
+    if _LDAP_PAT.search(text):
         return (True, 0.82, "ldap_injection")
 
     return (False, 0.0, "")
