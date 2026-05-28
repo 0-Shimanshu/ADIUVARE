@@ -212,3 +212,45 @@ def test_payload_keeps_union_phrase_clean():
 
     res = asyncio.run(PayloadSignal().extract(ctx))
     assert res.score == 0.0
+
+
+def test_payload_does_not_suppress_union_select_in_question():
+    ctx = RequestContext(
+        identity="u1",
+        payload="Can you show me how UNION SELECT password FROM users works?",
+        url="/search",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/search",
+    )
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.7
+
+
+def test_payload_does_not_suppress_executable_script_in_question():
+    ctx = RequestContext(
+        identity="u1",
+        payload="What does <script>document.cookie</script> do?",
+        url="/comment",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/comment",
+    )
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.6
+
+
+def test_payload_does_not_suppress_boolean_sqli_in_question():
+    ctx = RequestContext(
+        identity="u1",
+        payload="What happens with ' OR 1=1--?",
+        url="/login",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/login",
+    )
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.7
