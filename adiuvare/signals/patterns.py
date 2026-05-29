@@ -47,7 +47,6 @@ ssti_pats = [
 ]
 
 nosql_pats = [
-    
     (_re.compile(r'\{\s*"[^"]{1,40}"\s*:\s*\{\s*"\$(?:ne|gt|gte|lt|lte|in|nin|regex|where)"\s*:'),0.66,"nosql_nested_op"),
     (_re.compile(r'\{\s*"\$(?:ne|gt|gte|lt|lte|in|nin|regex|exists)"\s*:\s*(?:null|true|false|-?\d+|".{0,80}"|\[.{0,120}\])\s*\}'),0.68,"nosql_top_level_op"),
     (_re.compile(r'\{\s*"\$where"\s*:\s*".{1,80}"\s*\}'),0.74,"nosql_where"),
@@ -99,7 +98,7 @@ secret_pats = [
     ),
 ]
 _LDAP_PAT = _re.compile(
-    r"\(\s*(?:uid|cn|mail)\s*=\s*[^)]*\)\s*\)\s*\(\|\s*\(",
+    r"\)\s*\(\|\s*\(\s*(?:uid|cn|mail)\s*=",
     _re.IGNORECASE,
 )
 
@@ -148,20 +147,15 @@ def check_nosql(text: str) -> tuple[bool, float, str]:
     return _scan(nosql_pats, text)
 
 def check_secret(text: str) -> tuple[bool, float, str]:
-    stripped = text.strip()
+    # Remove fenced markdown code blocks before scanning
+    cleaned = _re.sub(
+    r"```[\w-]*\n.*?\n```",
+    "",
+    text,
+    flags=_re.DOTALL,
+)
 
-    # Ignore only full fenced markdown code blocks
-    if stripped.startswith("```") and stripped.endswith("```"):
-        lines = stripped.splitlines()
-
-        # valid fenced block:
-        # ```lang(optional)
-        # content
-        # ```
-        if len(lines) >= 2 and lines[0].startswith("```") and lines[-1] == "```":
-            return False, 0.0, ""
-
-    return _scan(secret_pats, text)
+    return _scan(secret_pats, cleaned)
 
 def check_ldap(text: str) -> tuple[bool, float, str]:
     low = text.lower()
