@@ -61,8 +61,8 @@ def test_identity_heavy_detection():
             "ip_rep": SignalResult(score=0.8, reason="blacklisted_ip"),
         }
     )
-    assert score > 0.15
-    assert breakdown["identity"] > 0.10
+    assert score == pytest.approx(0.20, rel=1e-3)
+    assert breakdown["identity"] == pytest.approx(0.15, rel=1e-3)
 
 def test_negative_weight_raises():
     snap = ConfigSnapshot(

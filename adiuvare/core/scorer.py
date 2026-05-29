@@ -30,7 +30,7 @@ def compute_score(sig_res: dict[str, SignalResult], snap=None) -> tuple[float, d
                 raise ValueError(f"Weight for '{k}' must be non-negative, got {v}")
 
         total_snap = sum(snap_weights.values())
-        if total_snap == 0:
+        if total_snap <= 0:
             raise ValueError("All weights sum to zero - cannot normalize.")
 
         weights.update(snap_weights)
