@@ -242,11 +242,41 @@ class EventsScreen(WorkspaceView):
         has = event is not None
         verdict = str(event.get("verdict", "allow")) if event else "allow"
         ip = str(event.get("ip", "") or "") if event else ""
+<<<<<<< HEAD
         has_ip = bool(ip and ip != "-")
         connected = self._app().connected
 
         select_first = "Select an event row first"
         runtime = require_runtime_connection
+=======
+        connected = self._app().connected
+
+        self.query_one("#events-confirm", Button).disabled = not has or verdict == "block"
+        self.query_one("#events-whitelist", Button).disabled = (
+            not connected or not has
+        )
+
+        self.query_one("#events-monitor", Button).disabled = (
+            not connected or not has
+        )
+
+        self.query_one("#events-unmonitor", Button).disabled = (
+            not connected or not has
+        )
+
+        self.query_one("#events-unblock-monitor", Button).disabled = (
+            not connected or not has or verdict != "block"
+        )
+
+        self.query_one("#events-ban-ip", Button).disabled = (
+            not connected or not has or not ip or ip == "-"
+        )
+
+        self.query_one("#events-unban-ip", Button).disabled = (
+            not connected or not has or not ip or ip == "-"
+        )
+        self.query_one("#events-export", Button).disabled = not has
+>>>>>>> 8493416 (Disable runtime actions when disconnected)
 
         return {
             "events-confirm": runtime(
