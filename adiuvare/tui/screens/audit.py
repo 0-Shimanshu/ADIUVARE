@@ -223,7 +223,6 @@ class AuditScreen(WorkspaceView):
         has = event is not None
         verdict = str(event.get("verdict", "allow")) if event else "allow"
         ip = str(event.get("ip", "") or "") if event else ""
-<<<<<<< HEAD
         has_ip = bool(ip and ip != "-")
         connected = self._app().connected
         select_first = "Select an audit row first"
@@ -265,30 +264,6 @@ class AuditScreen(WorkspaceView):
                 blocked_reasons=blocked_reasons,
             )
         )
-=======
-        connected = self._app().connected
-
-        self.query_one("#audit-ban-ip", Button).disabled = (
-            not connected or not has or not ip or ip == "-"
-        )
-
-        self.query_one("#audit-unban-ip", Button).disabled = (
-            not connected or not has or not ip or ip == "-"
-        )
-
-        self.query_one("#audit-monitor", Button).disabled = (
-            not connected or not has
-        )
-
-        self.query_one("#audit-unmonitor", Button).disabled = (
-            not connected or not has
-        )
-
-        self.query_one("#audit-whitelist", Button).disabled = (
-            not connected or not has or verdict == "allow"
-        )
-        self.query_one("#audit-export-btn", Button).disabled = not has
->>>>>>> 8493416 (Disable runtime actions when disconnected)
 
     def _render_detail(self) -> None:
         panel = self.query_one("#audit-detail-panel", Static)
