@@ -52,8 +52,14 @@ def load_config(path: str | Path | None = None, preset: str = "balanced") -> Adi
     if path and not resolved.exists():
         raise FileNotFoundError(f"config file not found: {resolved}")
     if resolved and resolved.exists():
-        file_data = yaml.safe_load(resolved.read_text(encoding="utf-8")) or {}
+        file_data = yaml.safe_load(resolved.read_text(encoding="utf-8"))
+        if file_data is None:
+            file_data = {}
+        if not isinstance(file_data, dict):
+            raise ValueError(f"{resolved} must contain a top-level mapping/object, "
+                             f"got {type(file_data).__name__}")
         data = file_data
+
 
     merged = _merge_dicts(base, data)
     merged = _env_overrides(merged)

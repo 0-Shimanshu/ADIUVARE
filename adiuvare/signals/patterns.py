@@ -48,15 +48,19 @@ ssti_pats = [
 
 nosql_pats = [
     (_re.compile(r'\{\s*"[^"]{1,40}"\s*:\s*\{\s*"\$(?:ne|gt|gte|lt|lte|in|nin|regex|where)"\s*:'),0.66,"nosql_nested_op"),
+    (_re.compile(r'\{\s*"\$(?:ne|gt|gte|lt|lte|in|nin|regex|exists)"\s*:\s*(?:null|true|false|-?\d+|".{0,80}"|\[.{0,120}\])\s*\}'),0.68,"nosql_top_level_op"),
     (_re.compile(r'\{\s*"\$where"\s*:\s*".{1,80}"\s*\}'),0.74,"nosql_where"),
 ]
 
 
 def _scan(pats, text: str) -> tuple[bool, float, str]:
+    # Returns the highest-confidence match across all patterns.
+    # Tiebreak: first match wins by position (strictly-greater check).
+    best = (False, 0.0, "")
     for pat, conf, label in pats:
-        if pat.search(text):
-            return True, conf, label
-    return False, 0.0, ""
+        if pat.search(text) and conf > best[1]:
+            best = (True, conf, label)
+    return best
 
 
 def _bool_taut_hit(text: str) -> bool:

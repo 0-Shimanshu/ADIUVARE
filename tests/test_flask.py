@@ -1,3 +1,5 @@
+import threading
+
 from flask import Flask, jsonify, request
 
 from adiuvare import Guard
@@ -389,3 +391,74 @@ def test_flask_policy_decorator_preserves_sync_route_handler():
 
     assert res.status_code == 200
     assert res.get_json() == {"ok": True}
+
+
+def test_threadsafe_identity_store_items():
+    store = ThreadSafeIdentityStore()
+
+    win = store.get("user1")
+    store.update("user1", win)
+
+    items = store.items()
+
+    assert isinstance(items, list)
+    assert len(items) == 1
+    assert items[0][0] == "user1"
+
+
+def test_threadsafe_items_no_race_under_concurrent_writes():
+    """
+    items() must not raise RuntimeError when another thread calls bump()
+    concurrently. This validates the _thread lock actually guards iteration.
+    """
+    import queue
+
+    store = ThreadSafeIdentityStore()
+    errors = queue.Queue()
+    iterations = 1000
+
+    def writer():
+        for i in range(iterations):
+            try:
+                store.bump(f"identity-{i % 20}")
+            except Exception as e:
+                errors.put(f"writer: {e}")
+
+    def reader():
+        for _ in range(iterations):
+            try:
+                result = store.items()
+                assert isinstance(result, list)
+            except RuntimeError as e:
+                errors.put(f"reader: {e}")
+
+    threads = [
+        threading.Thread(target=writer),
+        threading.Thread(target=writer),
+        threading.Thread(target=reader),
+        threading.Thread(target=reader),
+    ]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    collected = []
+    while not errors.empty():
+        collected.append(errors.get())
+
+    assert collected == [], "Concurrency errors detected:\n" + "\n".join(collected)
+
+
+def test_threadsafe_items_returns_all_identities():
+    """items() must return all identities that have been bumped."""
+    store = ThreadSafeIdentityStore()
+    for i in range(5):
+        store.bump(f"user-{i}")
+
+    result = store.items()
+    identities = [k for k, _ in result]
+
+    assert len(result) == 5
+    for i in range(5):
+        assert f"user-{i}" in identities
