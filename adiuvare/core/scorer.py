@@ -1,4 +1,4 @@
-﻿from ..core.models import SignalResult
+from ..core.models import SignalResult
 
 _weights = {
     "payload": 0.40,
