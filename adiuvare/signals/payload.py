@@ -49,6 +49,10 @@ _LDAP_PAT = re.compile(
 
 def check_ldap(text: str) -> tuple[bool, float, str]:
     low = text.lower()
+    # Cheap pre-filter to avoid re.sub on the majority of benign traffic.
+    # The LDAP evasion sequence always requires at least ')', '(', and '|'.
+    if ")" not in low or "(" not in low or "|" not in low:
+        return (False, 0.0, "")
     # Collapse whitespace for fast-path checks so that spacing variants like
     # ") ) ( | (" are not silently dropped before _LDAP_PAT (which uses \s*)
     # can evaluate them.  The regex itself handles the authoritative detection.

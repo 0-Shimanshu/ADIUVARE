@@ -559,6 +559,22 @@ def test_payload_keeps_uid_filter_tutorial_clean():
     assert res.score == 0.0
 
 
+def test_payload_keeps_benign_spaced_ldap_clean():
+    """Benign spaced LDAP filter should not trigger LDAP injection signal."""
+    ctx = RequestContext(
+        identity="u1",
+        payload="( uid = john.doe )",
+        url="/search",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/search",
+    )
+
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score == 0.0
+
+
 # ---------------------------------------------------------------------------
 # Regression tests: whitespace-evasion bypass (GitHub issue)
 # The fast-path checks previously required zero-space exact matches, so a
