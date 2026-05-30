@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class SignalWeights(BaseModel):
@@ -35,7 +35,22 @@ class RuntimeConfig(BaseModel):
     observe_only: bool = False
     monitored_window: int = Field(default=20, ge=1, le=1000)
     monitored_multiplier: float = Field(default=1.2, ge=1.0, le=5.0)
-    trusted_proxies: list[str] = Field(default_factory=list)
+    trusted_proxies: list[str] = Field(
+        default_factory=list,
+        description=(
+            "List of trusted proxy IPs whose x-tor-exit header is accepted. "
+            "Only exact IP strings are supported — CIDR ranges are not matched. "
+            "Entries are stripped of whitespace automatically."
+        ),
+    )
+
+    @field_validator("trusted_proxies", mode="before")
+    @classmethod
+    def _strip_proxy_whitespace(cls, v: list) -> list:
+        """Strip whitespace from each entry so '1.2.3.4 ' matches '1.2.3.4'."""
+        if isinstance(v, list):
+            return [entry.strip() for entry in v if isinstance(entry, str)]
+        return v
 
 
 class AiConfig(BaseModel):
