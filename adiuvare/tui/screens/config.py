@@ -166,12 +166,12 @@ class ConfigScreen(WorkspaceView):
 
         self._app().save_config(changes)
         self.refresh_view()
-        self._app().set_footer_status("Saved")
+        self._app().set_footer_status("config saved")
 
     def action_toggle_mode(self) -> None:
         self._observe = not self._observe
         self._render_mode()
-        self._app().set_footer_status("mode toggled")
+        self._app().set_footer_status("observe mode toggled")
 
     def refresh_view(self) -> None:
         cfg = self._app().config
@@ -204,7 +204,7 @@ class ConfigScreen(WorkspaceView):
         self._update_redis_visibility()
 
     def footer_status(self) -> str:
-        return "Tab/up/down to navigate - [S] save - [T] toggle mode"
+        return "Keyboard shortcuts active"
 
     def _render_mode(self) -> None:
         mode_text = "observe" if self._observe else "enforce"

@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 
 class MonitorScreen(WorkspaceView):
-    shortcut_hints = "[1-7] tabs  [up/down] scroll  [auto 3s]  [q] quit"
+    shortcut_hints = "[1-7] tabs  [up/down] scroll  [auto 3s]"
     primary_id = "monitor-stream"
 
     def compose(self) -> ComposeResult:
