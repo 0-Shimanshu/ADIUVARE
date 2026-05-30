@@ -9,6 +9,7 @@ _weights = {
 }
 
 _total_w = sum(_weights.values())
+assert _total_w > 0, "default _weights must sum to a positive value"
 _weights = {k: v / _total_w for k, v in _weights.items()}
 
 
@@ -25,13 +26,15 @@ def compute_score(sig_res: dict[str, SignalResult], snap=None) -> tuple[float, d
             "identity": snap.identity_weight,
         }
 
+        # only snap-overridden keys are validated; context and ip_rep carry
+        # over from _weights which are already normalized and guaranteed positive
         for k, v in snap_weights.items():
             if v < 0:
                 raise ValueError(f"Weight for '{k}' must be non-negative, got {v}")
 
         total_snap = sum(snap_weights.values())
         if total_snap <= 0:
-            raise ValueError("All weights sum to zero - cannot normalize.")
+            raise ValueError("Snap weights sum to zero or below - cannot normalize.")
 
         weights.update(snap_weights)
         total_w = sum(weights.values())
