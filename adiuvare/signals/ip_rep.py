@@ -33,7 +33,11 @@ class IPRepSignal(SoftSignal):
         raw = str(ip)
         if ctx.headers.get("x-tor-exit") == "1":
             if ctx.ip in self._trusted_proxies:
-                return SignalResult(score=0.35, reason="tor_hint", detail={"ip": raw})
+                # The actual Tor exit node IP is in X-Forwarded-For, not ctx.ip.
+                # ctx.ip here is the trusted proxy — we report the forwarded IP
+                # so the detail reflects the real client, not the proxy itself.
+                client_ip = ctx.headers.get("x-forwarded-for", raw).split(",")[0].strip()
+                return SignalResult(score=0.35, reason="tor_hint", detail={"ip": client_ip})
 
         for prefix in _noisy_nets:
             if raw.startswith(prefix):

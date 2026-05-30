@@ -76,7 +76,7 @@ class Guard:
             BehaviorSignal(self._id_store),
             IdentitySignal(self._id_store),
             ContextSignal(),
-            IPRepSignal(),
+            IPRepSignal(self._cfg),
         ]
         self._pipeline = Pipeline(
             self._id_store,
