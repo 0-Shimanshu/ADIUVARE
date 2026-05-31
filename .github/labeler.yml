@@ -13,7 +13,7 @@ enhancement:
   - changed-files:
       - any-glob-to-any-file:
           - "adiuvare/**"
-          - "cli.py"
+          - "adiuvare/cli.py"
           - "pyproject.toml"
           - "scripts/**"
           - ".github/workflows/**"

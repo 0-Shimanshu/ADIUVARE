@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_ROOTS = ("adiuvare/",)
-RUNTIME_FILES = {"cli.py"}
+RUNTIME_FILES = {"adiuvare/cli.py"}
 
 
 def _git_lines(*args: str) -> list[str]:
