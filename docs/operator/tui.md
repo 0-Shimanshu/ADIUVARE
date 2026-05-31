@@ -35,20 +35,31 @@ running runtime.
 The header bar shows the current connection state at all times:
 
 - `connected` in green means a live runtime socket is reachable
-- `offline` in orange means no socket was found or the runtime is unreachable
+- `disconnected` in orange means no socket was found or the runtime is unreachable
 
-The footer shows `live link active` when the stream is healthy. If the stream
-drops mid-session, the footer shows `stream link dropped`. The TUI does not
-exit or reconnect automatically in that case.
+When disconnected, an orange banner appears below the tab strip:
+
+```text
+DISCONNECTED — Cached audit data only — connect to a live runtime for bans, blocks, and monitors
+```
+
+The footer shows `live link active` when connected. When disconnected it shows
+`disconnected — cached data only`, and the right footer adds `offline mode`
+before the current screen status.
+
+If the stream drops mid-session, the footer may also show `stream link dropped`.
+The TUI does not exit or reconnect automatically in that case.
 
 ### How the UI signals unavailable actions
 
-The TUI does not currently dim or disable individual action buttons based on
-connection state. The header persistently shows `connected` or `offline` so
-operators always know which mode they are in. Operators should check the
-header before taking any state-changing action. Any action taken while the
-header shows `offline` only writes a local audit record and does not change
-runtime state.
+On Events and Audit, runtime-mutating actions are disabled while disconnected.
+Disabled buttons use dimmed dashed styling. Hover a disabled button for the
+specific reason, and read the action-bar hint beside the buttons for selection
+and connection context.
+
+Inspection actions such as export remain available offline. The identity
+context pane on Events also marks ready vs unavailable actions for the
+current row.
 
 ### Which views still work offline
 
@@ -72,9 +83,9 @@ These actions send commands to the running runtime when connected:
 - unban IP
 - apply config changes
 
-When disconnected, these actions only write a local audit record. They do not
-change runtime state. No ban, block, or monitor takes effect until a connected
-session sends the command to a live runtime.
+When disconnected, these actions are disabled in the Events and Audit screens.
+They cannot be triggered from buttons or keyboard shortcuts. Connect to a live
+runtime before taking a state-changing action.
 
 ## Navigation
 

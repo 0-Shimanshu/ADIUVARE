@@ -9,6 +9,12 @@ create table if not exists audit_events (
     created_at text default current_timestamp
 );
 
+create index if not exists idx_audit_created_at
+    on audit_events (created_at);
+
+create index if not exists idx_audit_identity
+    on audit_events (identity, created_at);
+
 create table if not exists identity_state (
     identity text primary key,
     seen integer not null,

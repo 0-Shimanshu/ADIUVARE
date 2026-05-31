@@ -131,6 +131,10 @@ class ThreadSafeIdentityStore(IdentityStore):
         with self._thread:
             super().update(identity, win)
 
+    def items(self) -> list[tuple[str, IdentityWindow]]:
+        with self._thread:
+            return super().items()
+
     def set_blocked(self, identity: str, seconds: int | float | None = None) -> None:
         with self._thread:
             super().set_blocked(identity, seconds)

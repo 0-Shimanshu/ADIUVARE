@@ -74,6 +74,14 @@ Screen {
     border-bottom: tall #58a6ff;
 }
 
+#connection-banner {
+    height: 1;
+    background: #1c1408;
+    color: #f0883e;
+    padding: 0 1;
+    display: none;
+}
+
 #tab-filler {
     width: 1fr;
     height: 3;
@@ -501,7 +509,7 @@ Scrollbar {
 }
 
 #ai-subtab-bar {
-    height: 3;
+    height: auto;
     layout: horizontal;
     background: #0d1117;
     border-bottom: solid #21262d;
@@ -531,9 +539,19 @@ Scrollbar {
     border-bottom: tall #a371f7;
 }
 
+.ai-subtab:focus {
+    text-style: bold;
+    tint: transparent;
+    background: #161b22;
+}
+
+.ai-subtab.-active:focus {
+    background: #1a2840;
+}
+
 #ai-subtab-spacer {
     width: 1fr;
-    height: 3;
+    height: auto;
     background: #0d1117;
 }
 
@@ -547,6 +565,7 @@ Scrollbar {
     height: 5;
     layout: horizontal;
     padding: 0 1;
+    margin-top: 1;
 }
 
 .ai-kpi-card {
@@ -555,6 +574,7 @@ Scrollbar {
     border: solid #21262d;
     background: #161b22;
     padding: 0 2;
+    margin: 0 1;
     content-align: center middle;
 }
 
@@ -571,6 +591,7 @@ Scrollbar {
     min-height: 10;
     layout: horizontal;
     padding: 0 1;
+    margin-top: 1;
 }
 
 .ai-chart-panel {
@@ -578,6 +599,7 @@ Scrollbar {
     border: solid #21262d;
     background: #161b22;
     padding: 1 2;
+    margin: 0 1;
     overflow-y: auto;
 }
 
@@ -585,6 +607,8 @@ Scrollbar {
     height: 1fr;
     layout: horizontal;
     padding: 0 1;
+    margin-top: 1;
+    margin-bottom: 1;
 }
 
 .ai-report-panel {
@@ -592,6 +616,7 @@ Scrollbar {
     border: solid #21262d;
     background: #161b22;
     padding: 1 2;
+    margin: 0 1;
     overflow-y: auto;
 }
 
@@ -622,32 +647,32 @@ Scrollbar {
 }
 
 #ai-ask-header-row {
-    height: auto;
-    max-height: 2;
+    height: 3;
     layout: horizontal;
     background: #1a0d2a;
     border-bottom: solid #2a1a40;
+    align: left middle;
 }
 
 #ai-chat-header {
     width: 1fr;
     height: auto;
-    max-height: 2;
+    max-height: 3;
     padding: 0 2;
 }
 
 #ai-ask-status {
     width: auto;
     height: auto;
-    max-height: 2;
+    max-height: 3;
     padding: 0 2;
     content-align: right middle;
 }
 
 #ai-prompt-hints {
     height: auto;
-    max-height: 2;
-    padding: 0 2;
+    max-height: 3;
+    padding: 1 2;
     background: #0d1117;
 }
 
@@ -655,13 +680,14 @@ Scrollbar {
     height: 1fr;
     border: solid #21262d;
     background: #161b22;
-    padding: 1 2;
+    padding: 1 4;
+    margin: 1 2;
     overflow-y: auto;
 }
 
 #ai-chat-input-row {
     height: auto;
-    padding: 0 1;
+    padding: 1 2;
     layout: horizontal;
     align: left middle;
     background: #0d1117;

@@ -12,6 +12,7 @@ from ..operator_actions import (
     ActionAvailability,
     apply_action_availability,
     format_action_status,
+    require_runtime_connection,
 )
 from ..workspace import (
     PALETTE,
@@ -185,7 +186,7 @@ class AuditScreen(WorkspaceView):
             self._update_actions()
 
     def _action_ban_ip(self) -> None:
-        if not self._selected:
+        if not self._selected or not self._app().connected:
             return
         ip = str(self._selected.get("ip", ""))
         if ip:
@@ -193,7 +194,7 @@ class AuditScreen(WorkspaceView):
             self._app().set_footer_status(f"ban IP {ip} sent")
 
     def _action_unban_ip(self) -> None:
-        if not self._selected:
+        if not self._selected or not self._app().connected:
             return
         ip = str(self._selected.get("ip", ""))
         if ip:
@@ -201,19 +202,19 @@ class AuditScreen(WorkspaceView):
             self._app().set_footer_status(f"unban IP {ip} sent")
 
     def _action_monitor(self) -> None:
-        if not self._selected:
+        if not self._selected or not self._app().connected:
             return
         self._app().monitor_identity(str(self._selected.get("identity", "")))
         self._app().set_footer_status("monitor identity sent")
 
     def _action_unmonitor(self) -> None:
-        if not self._selected:
+        if not self._selected or not self._app().connected:
             return
         self._app().unmonitor_identity(str(self._selected.get("identity", "")))
         self._app().set_footer_status("unmonitor identity sent")
 
     def _action_whitelist(self) -> None:
-        if not self._selected:
+        if not self._selected or not self._app().connected:
             return
         self._app().whitelist_identity(str(self._selected.get("identity", "")))
         self._app().set_footer_status("whitelist sent")
@@ -223,16 +224,27 @@ class AuditScreen(WorkspaceView):
         verdict = str(event.get("verdict", "allow")) if event else "allow"
         ip = str(event.get("ip", "") or "") if event else ""
         has_ip = bool(ip and ip != "-")
+        connected = self._app().connected
         select_first = "Select an audit row first"
+        runtime = require_runtime_connection
 
         return {
-            "audit-ban-ip": ActionAvailability(has and has_ip, select_first if not has else "No IP on event"),
-            "audit-unban-ip": ActionAvailability(has and has_ip, select_first if not has else "No IP on event"),
-            "audit-monitor": ActionAvailability(has, select_first),
-            "audit-unmonitor": ActionAvailability(has, select_first),
-            "audit-whitelist": ActionAvailability(
-                has and verdict != "allow",
-                select_first if not has else "Only for non-allow events",
+            "audit-ban-ip": runtime(
+                ActionAvailability(has and has_ip, select_first if not has else "No IP on event"),
+                connected,
+            ),
+            "audit-unban-ip": runtime(
+                ActionAvailability(has and has_ip, select_first if not has else "No IP on event"),
+                connected,
+            ),
+            "audit-monitor": runtime(ActionAvailability(has, select_first), connected),
+            "audit-unmonitor": runtime(ActionAvailability(has, select_first), connected),
+            "audit-whitelist": runtime(
+                ActionAvailability(
+                    has and verdict != "allow",
+                    select_first if not has else "Only for non-allow events",
+                ),
+                connected,
             ),
             "audit-export-btn": ActionAvailability(has, select_first),
         }

@@ -5,6 +5,8 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+import httpx
+import pytest
 
 from adiuvare import Guard
 from adiuvare.core.models import AdiuvareEvent, RequestContext, SignalResult
@@ -51,7 +53,8 @@ def test_fastapi_middleware_blocks_when_identity_is_blocked():
     assert res.status_code == 429
 
 
-def test_fastapi_runs_trackB_in_background():
+@pytest.mark.asyncio
+async def test_fastapi_runs_trackB_in_background():
     app = FastAPI()
     guard = Guard(soft_signals=[SlowSignal()])
     seen = []
@@ -66,15 +69,17 @@ def test_fastapi_runs_trackB_in_background():
     async def ping():
         return {"ok": True}
 
-    client = TestClient(app)
-    started = time.perf_counter()
-    res = client.get("/ping", headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u2"})
-    elapsed = time.perf_counter() - started
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        started = time.perf_counter()
+        res = await client.get("/ping", headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u2"})
+        elapsed = time.perf_counter() - started
 
     assert res.status_code == 200
     assert elapsed < 0.18
     assert seen == []
-    time.sleep(0.3)
+    await asyncio.sleep(0.3)
     assert seen == ["allow"]
 
 
