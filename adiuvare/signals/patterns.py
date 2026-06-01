@@ -66,30 +66,33 @@ def _bool_taut_hit(text: str) -> bool:
         return True
     return False
 
-_QUESTION_RE = _re.compile(
+QUESTION_RE = _re.compile(
     r"(?i)^(how|what|why|when|can|does|do|is|are)\b.*\?"
 )
 
-def _is_discussion_context(text: str) -> bool:
-    return bool(_QUESTION_RE.search(text))
+def is_discussion_context(text: str) -> bool:
+    return bool(QUESTION_RE.match(text))
 
-_EXECUTABLE_SCRIPT_RE = _re.compile(r"(?i)<\s*script\b[^>]*>[^<\s]")
+EXECUTABLE_SCRIPT_RE = _re.compile(r"(?i)<\s*script\b[^>]*>\s*\S[^<]*<\s*/\s*script\s*>")
 
-def _is_executable_xss(text: str) -> bool:
-    return bool(_EXECUTABLE_SCRIPT_RE.search(text))
+def is_executable_xss(text: str) -> bool:
+    return bool(EXECUTABLE_SCRIPT_RE.search(text))
+
+def should_suppress_xss_lib(text: str) -> bool:
+    return is_discussion_context(text) and not is_executable_xss(text)
 
 def check_sql(text: str) -> tuple[bool, float, str]:
     if _bool_taut_hit(text):
         return True, 0.92, "bool_taut"
     hit = _scan(sql_pats, text)
-    if hit[2] == "select_from" and _is_discussion_context(text):
+    if hit[2] == "select_from" and is_discussion_context(text):
         return False, 0.0, ""
     return hit
 
 
 def check_xss(text: str) -> tuple[bool, float, str]:
     hit = _scan(xss_pats, text)
-    if hit[2] == "script_tag" and _is_discussion_context(text):
+    if hit[2] == "script_tag" and is_discussion_context(text) and not is_executable_xss(text):
         return False, 0.0, ""
     return hit
 

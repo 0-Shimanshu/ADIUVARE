@@ -239,7 +239,7 @@ def test_payload_does_not_suppress_executable_script_in_question():
         endpoint="/comment",
     )
     res = asyncio.run(PayloadSignal().extract(ctx))
-    assert res.score >= 0.6
+    assert res.score >= 0.7
 
 
 def test_payload_does_not_suppress_boolean_sqli_in_question():
