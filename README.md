@@ -160,6 +160,40 @@ async def health():
 @guard.policy("admin")
 async def admin_login():
     return {"ok": True}
+
+```
+
+For Django, create a middleware file (e.g. `myapp/middleware.py`):
+
+```python
+from adiuvare import Guard
+from adiuvare.integrations.django import AdiuvareMiddleware
+
+guard = Guard.from_config("adiuvare.yaml")
+
+def adiuvare_middleware(get_response):
+    return AdiuvareMiddleware(get_response, guard)
+```
+
+Then add it to your `settings.py`:
+
+```python
+MIDDLEWARE = [
+    "myapp.middleware.adiuvare_middleware",
+    # ... other middleware
+]
+```
+
+To protect specific routes:
+
+```python
+guard.configure_routes(
+    {
+        "/health": {"exempt": True},
+        "/admin/login": {"policy": "admin", "sensitivity": "critical"},
+        "/search": {"policy": "search", "sensitivity": "internal"},
+    }
+)
 ```
 
 Check the runtime:
