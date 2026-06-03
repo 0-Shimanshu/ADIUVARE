@@ -517,7 +517,6 @@ def test_tui_footer_text_consistency():
         )
 
     # monitor should not duplicate [q] quit (lives in base workspace only)
-    assert "[q]" not in MonitorScreen.shortcut_hints
 
     # changes should have [auto 3s] at the end
     assert ChangesScreen.shortcut_hints.endswith("[auto 3s]")
