@@ -1,0 +1,24 @@
+thresholds:
+  flag: 0.25
+  throttle: 0.55
+  block: 0.80
+
+weights:
+  payload: 0.40
+  behavior: 0.35
+  identity: 0.25
+
+runtime:
+  backend: sqlite
+  observe_only: false
+
+ai:
+  enabled: false
+  mode: "off"
+  model: llama3
+  base_url: http://127.0.0.1:11434
+
+meta:
+  framework: django
+  instances: single
+  strictness: internal

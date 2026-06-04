@@ -119,7 +119,7 @@ audit_db: .adiuvare/audit.db
 ```
 
 If you are evaluating the source tree without installing it yet, you can still
-run `python cli.py status` or `python cli.py init --no-tui` from the repository
+run `python -m adiuvare.cli status` or `python -m adiuvare.cli init --no-tui` from the repository
 root.
 
 More detail: [docs/installation.md](docs/installation.md)
@@ -160,6 +160,40 @@ async def health():
 @guard.policy("admin")
 async def admin_login():
     return {"ok": True}
+
+```
+
+For Django, create a middleware file (e.g. `myapp/middleware.py`):
+
+```python
+from adiuvare import Guard
+from adiuvare.integrations.django import AdiuvareMiddleware
+
+guard = Guard.from_config("adiuvare.yaml")
+
+def adiuvare_middleware(get_response):
+    return AdiuvareMiddleware(get_response, guard)
+```
+
+Then add it to your `settings.py`:
+
+```python
+MIDDLEWARE = [
+    "myapp.middleware.adiuvare_middleware",
+    # ... other middleware
+]
+```
+
+To protect specific routes:
+
+```python
+guard.configure_routes(
+    {
+        "/health": {"exempt": True},
+        "/admin/login": {"policy": "admin", "sensitivity": "critical"},
+        "/search": {"policy": "search", "sensitivity": "internal"},
+    }
+)
 ```
 
 Check the runtime:
@@ -300,6 +334,15 @@ Adiuvare is in a good place for:
 
 There are still edges around distributed shared state and disconnected TUI
 semantics. Those are documented plainly in [docs/limitations.md](docs/limitations.md).
+
+## Payload coverage
+
+Payload scoring is currently strongest on common SQLi, XSS, and path traversal patterns along with nearby normalization variants.
+
+Known detection boundaries and false-positive cases are documented in:
+
+- docs/signals.md
+- docs/limitations.md
 
 ## Docs
 

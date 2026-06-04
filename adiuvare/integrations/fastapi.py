@@ -1,5 +1,4 @@
 import asyncio
-import threading
 
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -20,8 +19,6 @@ class AdiuvareMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         await self._guard.ensure_started()
-        body = await request.body()
-        body_text = body.decode() if body else None
         raw_ip = request.headers.get("x-forwarded-for", "")
         ip = raw_ip.split(",", 1)[0].strip()
         if not ip:
@@ -30,6 +27,9 @@ class AdiuvareMiddleware(BaseHTTPMiddleware):
         route_cfg = self._guard.routecfg(request.url.path, endpoint)
         if route_cfg.get("exempt"):
             return await call_next(request)
+
+        body = await request.body()
+        body_text = body.decode()
 
         ctx = build_http_ctx(
             identity=request.headers.get("x-user-id", request.client.host if request.client else "anon"),
@@ -70,10 +70,7 @@ class AdiuvareMiddleware(BaseHTTPMiddleware):
                 return res
 
             res = await call_next(request)
-            threading.Thread(
-                target=lambda: asyncio.run(self._run_trackB(ctx)),
-                daemon=True,
-            ).start()
+            asyncio.ensure_future(self._run_trackB(ctx))
             return res
         finally:
             _sink_mode.reset(token)

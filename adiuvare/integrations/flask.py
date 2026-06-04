@@ -15,16 +15,19 @@ class AdiuvareMiddleware:
 
     def __call__(self, environ, start_response):
         req = Request(environ)
-        body = req.get_data(cache=True, as_text=True)
         raw_ip = req.headers.get("x-forwarded-for", "")
         ip = raw_ip.split(",", 1)[0].strip() or req.remote_addr or "127.0.0.1"
         route_cfg = self._route_cfg(req)
         if route_cfg.get("exempt"):
             return self._app(environ, start_response)
 
+        body_text = req.get_data(as_text=True)
+        query_text = req.query_string.decode("utf-8") if req.query_string else ""
+        payload = ctx_payload(body_text, query_text)
+
         ctx = build_http_ctx(
             identity=req.headers.get("x-user-id", req.remote_addr or "anon"),
-            payload=ctx_payload(body or None, req.query_string.decode(errors="replace")),
+            payload=payload,
             url=req.path,
             method=req.method,
             headers=dict(req.headers),

@@ -71,6 +71,23 @@ async def review():
 This is the better fit when the route is unusual or the built-in names are too
 broad.
 
+Decorator helpers do not change the route function's sync/async shape. A
+normal synchronous Flask view remains synchronous, and an async FastAPI or Flask
+view remains awaitable.
+
+```python
+@app.get("/health")
+@guard.exempt()
+def flask_health():
+    return {"ok": True}
+
+
+@app.post("/payments/charge")
+@guard.policy("payment")
+async def charge():
+    return {"ok": True}
+```
+
 ## RoutePolicy
 
 `RoutePolicy` is the dataclass behind the decorator helpers.
