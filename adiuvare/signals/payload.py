@@ -31,7 +31,7 @@ class PayloadSignal(SoftSignal):
             hits.append((max(sql_lib["conf"], 0.82), sql_lib["fp"] or "sql_lib"))
         if sql_pat[0]:
             hits.append((sql_pat[1], sql_pat[2]))
-        if xss_lib["hit"] and not should_suppress_xss_lib:
+        if xss_lib["hit"] and not should_suppress_xss_lib(text):
             hits.append((max(xss_lib["conf"] * 0.80, 0.62), "xss_lib"))
         if xss_pat[0]:
             hits.append((xss_pat[1], xss_pat[2]))
