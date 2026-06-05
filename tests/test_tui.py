@@ -479,3 +479,44 @@ async def test_setup_wizard_uses_selects_and_writes_full_config(tmp_path):
     assert "thresholds:" in saved
     assert "framework: fastapi" in saved
     assert "mode: assist" in saved
+
+
+def test_tui_footer_text_consistency():
+    """Verify footer/shortcut text is consistent across all TUI screens."""
+    if not HAS_TEXTUAL:
+        pytest.skip("textual not installed")
+
+    from adiuvare.tui.screens.config import ConfigScreen
+    from adiuvare.tui.screens.events import EventsScreen
+    from adiuvare.tui.screens.monitor import MonitorScreen
+    from adiuvare.tui.screens.changes import ChangesScreen
+    from adiuvare.tui.screens.audit import AuditScreen
+    from adiuvare.tui.screens.signals import SignalsScreen
+    from adiuvare.tui.screens.ai import AIScreen
+
+    # All screens should use the same idle footer status text
+    screens_with_static_footer = [
+        ConfigScreen, MonitorScreen, ChangesScreen, AuditScreen, SignalsScreen
+    ]
+    for screen_cls in screens_with_static_footer:
+        instance = screen_cls.__new__(screen_cls)
+        instance._selected = None
+        instance._last_report = None
+        assert instance.footer_status() == "Keyboard shortcuts active", (
+            f"{screen_cls.__name__}.footer_status() should return 'Keyboard shortcuts active'"
+        )
+
+    # shortcut_hints should all start consistently with [1-7] tabs
+    all_screens = [
+        ConfigScreen, MonitorScreen, ChangesScreen, AuditScreen,
+        SignalsScreen, EventsScreen, AIScreen,
+    ]
+    for screen_cls in all_screens:
+        assert screen_cls.shortcut_hints.startswith("[1-7] tabs"), (
+            f"{screen_cls.__name__}.shortcut_hints should start with '[1-7] tabs'"
+        )
+
+    # monitor should not duplicate [q] quit (lives in base workspace only)
+
+    # changes should have [auto 3s] at the end
+    assert ChangesScreen.shortcut_hints.endswith("[auto 3s]")

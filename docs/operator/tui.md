@@ -110,6 +110,20 @@ Common keys:
 
 The TUI refreshes automatically every 3 seconds.
 
+### Screen shortcuts
+
+Each screen shows its available shortcuts in the footer.
+
+| Screen  | Shortcuts |
+|---------|-----------|
+| Monitor | `[1-7]` tabs · `[↑/↓]` scroll · `[auto 3s]` |
+| Events  | `[1-7]` tabs · `[f]` filter · `[c]` confirm · `[w]` whitelist · `[m]` monitor · `[e]` export |
+| Config  | `[1-7]` tabs · `[s]` save · `[t]` toggle observe · `[Tab]` next field |
+| Signals | `[1-7]` tabs · `[↑/↓]` navigate · `[Enter]` select signal · `[auto 3s]` |
+| AI      | `[1-7]` tabs · `[a]` analyze · `[k]` ask · `[d]` 7-day · `[0]` 30-day |
+| Audit   | `[1-7]` tabs · `[f]` filter · `[e]` export JSONL · `[↑/↓]` navigate |
+| Changes | `[1-7]` tabs · `[f]` filter · `[↑/↓]` navigate · `[auto 3s]` |
+
 ## Monitor
 
 Monitor is the landing screen. It is the fastest answer to:
@@ -159,7 +173,7 @@ Current actions include:
 - whitelist
 - monitor identity
 - unmonitor identity
-- unblock + monitor
+- unblock and monitor
 - ban IP
 - unban IP
 - export JSON

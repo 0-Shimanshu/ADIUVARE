@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class ChangesScreen(WorkspaceView):
-    shortcut_hints = "[1-7] tabs  [f] filter  [auto 3s]  [up/down] navigate"
+    shortcut_hints = "[1-7] tabs  [f] filter  [up/down] navigate  [auto 3s]"
     primary_id = "changes-table"
     search_id = "changes-search-filter"
 
