@@ -1,5 +1,13 @@
+import json
+
+from django.conf import settings
+from django.http import JsonResponse
+
 from adiuvare import Guard
 from adiuvare.integrations.django import AdiuvareMiddleware
+
+if not settings.configured:
+    settings.configure(DEFAULT_CHARSET="utf-8")
 
 
 class DummyReq:
@@ -32,6 +40,9 @@ def test_django_middleware_blocks_banned_identity():
     req = DummyReq("/ping", headers={"User-Agent": "Mozilla/5.0", "x-user-id": "u1"})
     res = mw(req)
     assert res.status_code == 429
+    assert isinstance(res, JsonResponse)
+    assert b"".join(res) == b'{"detail": "identity_blocked"}'
+    assert json.loads(res.content) == {"detail": "identity_blocked"}
 
 
 def test_django_query_sqli_does_not_stay_open():

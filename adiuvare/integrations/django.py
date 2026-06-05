@@ -1,13 +1,9 @@
 import asyncio
 
+from django.http import JsonResponse
+
 from .sqlalchemy import _sink_mode
 from . import build_http_ctx, ctx_payload
-
-
-class JsonResponse:
-    def __init__(self, data: dict, status: int = 200) -> None:
-        self.data = data
-        self.status_code = status
 
 
 class AdiuvareMiddleware:
