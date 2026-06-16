@@ -118,7 +118,7 @@ class EventsScreen(WorkspaceView):
         if not self._selected or not self._app().connected:
             return
         self._app().confirm_block(str(self._selected.get("identity", "")))
-        self._app().set_footer_status("confirm block sent")
+        self._app().set_footer_status("block confirmed")
 
     def action_whitelist(self) -> None:
         if not self._selected or not self._app().connected:
@@ -142,7 +142,7 @@ class EventsScreen(WorkspaceView):
         if not self._selected or not self._app().connected:
             return
         self._app().unblock_monitor(str(self._selected.get("identity", "")))
-        self._app().set_footer_status("unblock + monitor sent")
+        self._app().set_footer_status("unblock and monitor sent")
 
     def _action_ban_ip(self) -> None:
         if not self._selected or not self._app().connected:
