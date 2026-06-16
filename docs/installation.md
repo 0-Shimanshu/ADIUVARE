@@ -126,17 +126,36 @@ In the common case, you should not have to do anything special here.
 
 If the bundled binary is not right for your machine, build it locally.
 
+Run one of these commands from the repository root after installing `gcc` or an
+equivalent C compiler. On Windows, MSYS2 with `gcc` is the expected local setup;
+on macOS, `xcode-select --install` provides the usual compiler toolchain; on
+Linux, install your distro's `gcc` or `build-essential` package.
+
 Windows:
 
 ```bash
 python scripts/build_libinjection.py
 ```
 
-Shell:
+Linux/macOS shell:
 
 ```bash
 sh scripts/build_libinjection.sh
 ```
+
+The Python script is also available on Linux and macOS:
+
+```bash
+python scripts/build_libinjection.py
+```
+
+The build writes the shared library beside the vendored sources:
+
+| platform | output |
+| --- | --- |
+| Windows | `adiuvare/vendor/libinjection.dll` |
+| macOS | `adiuvare/vendor/libinjection.dylib` |
+| Linux | `adiuvare/vendor/libinjection.so` |
 
 If the compiled detector is unavailable, Adiuvare falls back to Python
 heuristics. That keeps the runtime usable, but it is still the weaker path.

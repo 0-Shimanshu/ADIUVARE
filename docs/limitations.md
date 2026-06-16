@@ -147,6 +147,22 @@ What is not fully finished:
 If the bundled binary is not right for the target machine, you may still need a
 local build step.
 
+The current binary/build path is:
+
+| platform | shipped binary | local build output | build command |
+| --- | --- | --- | --- |
+| Windows | `adiuvare/vendor/libinjection.dll` | `adiuvare/vendor/libinjection.dll` | `python scripts/build_libinjection.py` |
+| macOS | none | `adiuvare/vendor/libinjection.dylib` | `python scripts/build_libinjection.py` or `sh scripts/build_libinjection.sh` |
+| Linux | none | `adiuvare/vendor/libinjection.so` | `python scripts/build_libinjection.py` or `sh scripts/build_libinjection.sh` |
+
+Run the command from the repository root after installing a C compiler. The
+Python script uses `gcc`; on Windows it first checks common MSYS2 locations, on
+macOS `xcode-select --install` provides the usual compiler toolchain, and on
+Linux the package is commonly named `gcc` or `build-essential`.
+
+For the install-time version of these steps, see
+[Local libinjection build](installation.md#local-libinjection-build).
+
 ## Windows local stream uses a fallback
 
 On runtimes without `asyncio.start_unix_server`, the local stream uses:
