@@ -7,6 +7,7 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, HorizontalScroll, Vertical
 from textual.widgets import Button, DataTable, Input, Static
+from adiuvare.tui.sortable_table import SortableDataTable
 
 from ..operator_actions import (
     ActionAvailability,
@@ -59,7 +60,7 @@ class AuditScreen(WorkspaceView):
                 yield Button("Search", id="audit-search-btn")
                 yield Static("", id="audit-filter-stats")
             with Horizontal(id="audit-body"):
-                yield DataTable(id="audit-table")
+                yield SortableDataTable(id="audit-table")
                 with Vertical(id="audit-right-col"):
                     yield Static("", id="audit-detail-panel")
                     with HorizontalScroll(id="audit-action-bar"):
@@ -72,7 +73,7 @@ class AuditScreen(WorkspaceView):
                         yield Static("", id="audit-action-status")
 
     def on_mount(self) -> None:
-        table = self.query_one("#audit-table", DataTable)
+        table = self.query_one("#audit-table", SortableDataTable)
         table.cursor_type = "row"
         table.add_columns("AGE", "VERDICT", "SCORE", "IDENTITY", "ENDPOINT", "IP", "DOMINANT")
         self.refresh_view()
@@ -107,10 +108,10 @@ class AuditScreen(WorkspaceView):
         elif button_id == "audit-whitelist":
             self._action_whitelist()
 
-    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+    def on_data_table_row_selected(self, event: SortableDataTable.RowSelected) -> None:
         self._select_row(event.cursor_row)
 
-    def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
+    def on_data_table_row_highlighted(self, event: SortableDataTable.RowHighlighted) -> None:
         self._select_row(event.cursor_row)
 
     def action_focus_filter(self) -> None:
@@ -147,7 +148,7 @@ class AuditScreen(WorkspaceView):
             else ""
         )
 
-        table = self.query_one("#audit-table", DataTable)
+        table = self.query_one("#audit-table", SortableDataTable)
         table.clear(columns=False)
         for row in rows:
             verdict = str(row.get("verdict", "allow"))
@@ -285,7 +286,7 @@ class AuditScreen(WorkspaceView):
             styled_label("Identity", str(event.get("identity", "?"))),
             styled_label("Endpoint", f"[{PALETTE['dim']}]{event.get('endpoint', '?')}[/]"),
             styled_label("IP", str(event.get("ip", "-") or "-")),
-            f"[{PALETTE['dim']}]Score         [/] {render_score_bar(score)} [{PALETTE['cyan']}]{score:.4f}[/]",
+            f"[{PALETTE['dim']}]Score        [/] {render_score_bar(score)} [{PALETTE['cyan']}]{score:.4f}[/]",
             styled_label("Verdict", f"[{verdict_color}]{decision_icon(verdict)} {verdict.upper()}[/]"),
             styled_label("Mode", str(event.get("mode", "enforce"))),
             styled_label("Dominant", f"[{PALETTE['cyan']}]{event.get('dominant', '-')}[/]"),

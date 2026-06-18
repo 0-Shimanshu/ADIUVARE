@@ -6,12 +6,12 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.widgets import Button, DataTable, Input, Static
+from adiuvare.tui.sortable_table import SortableDataTable
 
 from ..workspace import PALETTE, WorkspaceView, styled_label, styled_separator
 
 if TYPE_CHECKING:
     from ..app import AdiuvareApp
-
 
 class ChangesScreen(WorkspaceView):
     shortcut_hints = "[1-7] tabs  [f] filter  [up/down] navigate  [auto 3s]"
@@ -41,12 +41,12 @@ class ChangesScreen(WorkspaceView):
                 yield Button("Search", id="changes-search-btn")
                 yield Static("", id="changes-filter-stats")
             with Horizontal(id="changes-body"):
-                yield DataTable(id="changes-table")
+                yield SortableDataTable(id="changes-table")
                 with VerticalScroll(id="changes-detail-scroll"):
                     yield Static("", id="changes-detail-panel")
 
     def on_mount(self) -> None:
-        table = self.query_one("#changes-table", DataTable)
+        table = self.query_one("#changes-table", SortableDataTable)
         table.cursor_type = "row"
         table.add_columns("AGE", "KIND", "TARGET", "SUMMARY")
         self.refresh_view()
@@ -59,10 +59,10 @@ class ChangesScreen(WorkspaceView):
         if event.button.id == "changes-search-btn":
             self.refresh_view()
 
-    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+    def on_data_table_row_selected(self, event: SortableDataTable.RowSelected) -> None:
         self._select_row(event.cursor_row)
 
-    def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
+    def on_data_table_row_highlighted(self, event: SortableDataTable.RowHighlighted) -> None:
         self._select_row(event.cursor_row)
 
     def action_focus_filter(self) -> None:
@@ -92,12 +92,12 @@ class ChangesScreen(WorkspaceView):
             else f"[{PALETTE['very_dim']}]No change entries yet[/]"
         )
 
-        table = self.query_one("#changes-table", DataTable)
+        table = self.query_one("#changes-table", SortableDataTable)
         table.clear(columns=False)
         for row in rows:
             kind = str(row.get("kind", "patch")).replace("_", " ")
             target = str(row.get("target", "-"))[:20]
-            summary = str(row.get("summary", ""))[:62]
+            summary = str(row.get("summary", "-"))[:62]
             age = str(row.get("age", "-"))
             kind_color = PALETTE["cyan"] if kind == "patch config" else PALETTE["orange"]
             if "ban ip" in kind or "confirm block" in kind:
