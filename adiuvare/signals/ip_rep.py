@@ -2,6 +2,7 @@ import ipaddress
 
 from ..core.models import RequestContext, SignalResult
 from .base import SoftSignal
+from ..config.schema import AdiuvareConfig
 
 _noisy_nets = (
     "185.220.",
@@ -15,6 +16,11 @@ class IPRepSignal(SoftSignal):
     name = "ip_rep"
     weight = 0.05
 
+    def __init__(self, cfg: AdiuvareConfig | None = None) -> None:
+        self._trusted_proxies: set[str] = (
+            set(cfg.runtime.trusted_proxies) if cfg else set()
+        )
+
     async def extract(self, ctx: RequestContext) -> SignalResult:
         try:
             ip = ipaddress.ip_address(ctx.ip)
@@ -26,7 +32,17 @@ class IPRepSignal(SoftSignal):
 
         raw = str(ip)
         if ctx.headers.get("x-tor-exit") == "1":
-            return SignalResult(score=0.35, reason="tor_hint", detail={"ip": raw})
+            if ctx.ip in self._trusted_proxies:
+                # Use the rightmost entry in X-Forwarded-For — it is appended by
+                # the trusted proxy and cannot be spoofed by the client.
+                # The leftmost entry is client-controlled and is the classic
+                # XFF spoofing vector.
+                xff = ctx.headers.get("x-forwarded-for", "")
+                client_ip = xff.split(",")[-1].strip() if xff else raw
+                return SignalResult(score=0.35, reason="tor_hint", detail={"ip": client_ip})
+            # Untrusted source — ignore the header and fall through to other checks
+            else:
+                pass
 
         for prefix in _noisy_nets:
             if raw.startswith(prefix):
