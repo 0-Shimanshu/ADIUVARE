@@ -1,9 +1,16 @@
-import re
-
 from ..core.models import RequestContext, SignalResult
 from ..vendor import detect_sqli, detect_xss, normalize
 from .base import SoftSignal
-from .patterns import check_cmd, check_nosql, check_path, check_sql, check_ssti, check_xss
+from .patterns import (
+    check_cmd,
+    check_ldap,
+    check_nosql,
+    check_path,
+    check_secret,
+    check_sql,
+    check_ssti,
+    check_xss,
+)
 
 def _is_discussion_style_sql(text: str) -> bool:
     low = " ".join(text.lower().split())
@@ -41,23 +48,6 @@ def _is_discussion_style_sql(text: str) -> bool:
         and not dangerous
     )
 
-_LDAP_PAT = re.compile(
-    r"\*\)\s*\(\s*(?:uid|cn|mail)\s*=\s*\*?\s*\)\s*\)\s*\(\|\s*\(\s*(?:uid|cn|mail)\s*=",
-    re.IGNORECASE,
-)
-
-
-def check_ldap(text: str) -> tuple[bool, float, str]:
-    low = text.lower()
-    if "))(|(" not in low:
-        return (False, 0.0, "")
-    if all(f"({attr}=" not in low for attr in ("uid", "cn", "mail")):
-        return (False, 0.0, "")
-    if _LDAP_PAT.search(text):
-        return (True, 0.82, "ldap_injection")
-    return (False, 0.0, "")
-
-
 class PayloadSignal(SoftSignal):
     name = "payload"
     weight = 0.40
@@ -85,6 +75,12 @@ class PayloadSignal(SoftSignal):
             raw_ldap = check_ldap(raw)
             if raw_ldap[0] and raw_ldap[1] > ldap_pat[1]:
                 ldap_pat = raw_ldap
+        secret_pat = check_secret(text)
+
+        if raw != text:
+            raw_secret = check_secret(raw)
+            if raw_secret[0] and raw_secret[1] > secret_pat[1]:
+                secret_pat = raw_secret
 
         hits: list[tuple[float, str]] = []
 
@@ -106,6 +102,8 @@ class PayloadSignal(SoftSignal):
             hits.append((nosql_pat[1], nosql_pat[2]))
         if ldap_pat[0]:
             hits.append((ldap_pat[1], ldap_pat[2]))
+        if secret_pat[0]:
+            hits.append((secret_pat[1], secret_pat[2]))
 
         if _is_discussion_style_sql(text):
             hits = [h for h in hits if h[1] != "select_from"]
@@ -128,5 +126,6 @@ class PayloadSignal(SoftSignal):
             "ssti_pat": ssti_pat[2],
             "nosql_pat": nosql_pat[2],
             "ldap_pat": ldap_pat[2],
+            "secret_pat": secret_pat[2],
         }
         return SignalResult(score=score, reason=top[1], detail=detail)

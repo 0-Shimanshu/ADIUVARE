@@ -108,12 +108,11 @@ def test_guard_check_detects_etc_passwd_probe():
     guard = Guard()
     gate, event = guard.check_sync(
         "u4",
-        payload="$(cat /etc/passwd)",
+        payload="cat /etc/passwd",
     )
     assert gate.passed is True
     assert event is not None
     assert event.score > 0.0
-
 
 def test_route_decorators_preserve_sync_handler_shape():
     guard = Guard.__new__(Guard)

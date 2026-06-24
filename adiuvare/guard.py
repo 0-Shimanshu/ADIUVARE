@@ -25,6 +25,7 @@ from .signals.context import ContextSignal
 from .signals.identity import IdentitySignal
 from .signals.ip_rep import IPRepSignal
 from .signals.payload import PayloadSignal
+from .signals.credentials import CredentialLeakSignal
 from .state.audit_log import AuditLog
 from .state.event_stream import RedisEventStream, UnixSocketEventStream
 from .state.identity_store import IdentityStore, ThreadSafeIdentityStore
@@ -67,7 +68,12 @@ class Guard:
         self._cfg_snap = build_snapshot(self._cfg)
         self._id_store = ThreadSafeIdentityStore() if flaskmode else IdentityStore()
         self._wl = WhitelistStore()
-        self._hard_sigs = list(hard_signals or [])
+        self._hard_sigs = list(
+            hard_signals
+            or [
+                CredentialLeakSignal(),
+            ]
+        )
         Path(".adiuvare").mkdir(exist_ok=True)
         self._state_DBpath = Path(self._cfg.runtime.state_db_path)
         self._audit = AuditLog(self._cfg.runtime.audit_db_path)
@@ -523,6 +529,7 @@ class Guard:
             }
 
             wrap = _wrap_route_handler(fn)
+
             wrap._adiuvare_cfg = cfg
             return wrap
 
@@ -533,6 +540,7 @@ class Guard:
 
         def deco(fn):
             wrap = _wrap_route_handler(fn)
+
             wrap._adiuvare_exempt = True
             return wrap
 
