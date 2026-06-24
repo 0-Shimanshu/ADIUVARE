@@ -70,20 +70,13 @@ def run_trackA(ctx: RequestContext, id_store: IdentityStore) -> GateResult:
             block_reason="trackA_hold",
         )
 
-    if id_store.is_blocked(ctx.identity):
+    _seen, _blocked = id_store.bump_and_maybe_block(ctx.identity, trackA_cap())
+    if _blocked:
+        reason = "identity_blocked" if _seen <= trackA_cap() else "rate_limit_hit"
         return GateResult(
             passed=False,
             status_code=429,
-            block_reason="identity_blocked",
-        )
-
-    seen = id_store.bump(ctx.identity)
-    if seen > trackA_cap():
-        id_store.set_blocked(ctx.identity)
-        return GateResult(
-            passed=False,
-            status_code=429,
-            block_reason="rate_limit_hit",
+            block_reason=reason,
         )
 
     return GateResult(passed=True)

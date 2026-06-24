@@ -75,6 +75,44 @@ class IdentityStore:
         self.update(identity, win)
         return win.seen
 
+    def bump_and_maybe_block(self, identity: str, cap: int, block_ttl: float | None = None) -> tuple[int, bool]:
+        """Atomically check-is-blocked → bump → conditionally set-blocked.
+
+        Holds ``_lock`` across the full sequence so no two coroutines can
+        both pass the is-blocked check and both increment before either
+        applies the block.
+
+        Returns:
+            (seen, blocked_now) where *blocked_now* is True when this call
+            is the one that pushed the count over *cap* (caller should
+            return 429) or the identity was already blocked (caller should
+            also return 429).
+        """
+        with self._lock:
+            # is_blocked inline — no extra lock round-trip
+            win = self._windows.get(identity)
+            if win is None:
+                win = IdentityWindow()
+                self._windows[identity] = win
+
+            if win.blocked_until > time.time():
+                return win.seen, True
+            win.blocked_until = 0.0  # expire stale block in-place
+
+            # bump
+            win.seen += 1
+
+            # maybe block
+            if win.seen > cap:
+                win.blocked_until = time.time() + (
+                    block_ttl if block_ttl is not None else self._block_ttl
+                )
+                self._windows[identity] = win
+                return win.seen, True
+
+            self._windows[identity] = win
+            return win.seen, False
+
     def apply_score(self, identity: str, score: float, alpha: float = 0.35) -> IdentityWindow:
         """Blend the new score into EWMA and consume one monitored request if active."""
 
@@ -150,6 +188,10 @@ class ThreadSafeIdentityStore(IdentityStore):
     def bump(self, identity: str) -> int:
         with self._thread:
             return super().bump(identity)
+
+    def bump_and_maybe_block(self, identity: str, cap: int, block_ttl: float | None = None) -> tuple[int, bool]:
+        with self._thread:
+            return super().bump_and_maybe_block(identity, cap, block_ttl)
 
     def apply_score(self, identity: str, score: float, alpha: float = 0.35) -> IdentityWindow:
         with self._thread:
