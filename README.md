@@ -31,6 +31,22 @@ It is a good fit when you want middleware-level protection, request scoring,
 operator controls, and runtime visibility in one place, with SQLite by default
 and Redis available when you need a different backend.
 
+---
+
+## Table of Contents 
+
+- [What problem it solves](#what-problem-it-solves)
+- [Risk scoring, not rule filters](#risk-scoring-not-rule-filters)
+- [Installation](#installation)
+- [License](#license)
+- [Quick start](#quick-start)
+- [What it looks like](#what-it-looks-like)
+- [Common usage](#common-usage)
+- [Configuration](#configuration)
+- [Current scope](#current-scope)
+- [Payload coverage](#payload-coverage)
+- [Docs](#docs)
+
 ## What problem it solves
 
 Most teams start with request filters that look simple and feel reasonable:
