@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_ROOTS = ("adiuvare/",)
-RUNTIME_FILES = {"cli.py"}
+
 
 
 def _git_lines(*args: str) -> list[str]:
@@ -36,7 +36,7 @@ def main() -> int:
     runtime_changed = [
         path
         for path in changed
-        if path in RUNTIME_FILES or any(path.startswith(root) for root in RUNTIME_ROOTS)
+        if any(path.startswith(root) for root in RUNTIME_ROOTS)
     ]
     tests_changed = [path for path in changed if path.startswith("tests/")]
 
