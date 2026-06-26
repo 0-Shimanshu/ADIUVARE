@@ -374,8 +374,8 @@ Known detection boundaries and false-positive cases are documented in:
 - [Django](docs/integrations/django.md)
 
 
-## Contributors
+## 👥 Contributors
 
-<a href="https://github.com/0-Shimanshu/ADIUVARE/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=0-Shimanshu/ADIUVARE" />
-</a>
+Thanks to all contributors ❤️
+
+[![Contributors](https://contrib.rocks/image?repo=0-Shimanshu/ADIUVARE)](https://github.com/0-Shimanshu/ADIUVARE/graphs/contributors)
