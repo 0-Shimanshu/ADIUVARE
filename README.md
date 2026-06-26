@@ -46,6 +46,7 @@ and Redis available when you need a different backend.
 - [Current scope](#current-scope)
 - [Payload coverage](#payload-coverage)
 - [Docs](#docs)
+- [Contributors](#contributors)
 
 ## What problem it solves
 
@@ -371,3 +372,10 @@ Known detection boundaries and false-positive cases are documented in:
 - [FastAPI](docs/integrations/fastapi.md)
 - [Flask](docs/integrations/flask.md)
 - [Django](docs/integrations/django.md)
+
+
+## Contributors
+
+<a href="https://github.com/0-Shimanshu/ADIUVARE/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=0-Shimanshu/ADIUVARE" />
+</a>
