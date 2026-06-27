@@ -213,6 +213,11 @@ def test_payload_keeps_union_phrase_clean():
     res = asyncio.run(PayloadSignal().extract(ctx))
     assert res.score == 0.0
 
+
+def test_payload_does_not_suppress_union_select_in_question():
+    ctx = RequestContext(
+        identity="u1",
+        payload="Can you show me how UNION SELECT password FROM users works?",
 def test_payload_keeps_discussion_style_select_example_lower():
     ctx = RequestContext(
         identity="u1",
@@ -499,6 +504,16 @@ def test_payload_marks_cn_ldap_injection_probe():
     assert res.score >= 0.7
 
 
+def test_payload_does_not_suppress_executable_script_in_question():
+    ctx = RequestContext(
+        identity="u1",
+        payload="What does <script>document.cookie</script> do?",
+        url="/comment",
+        method="POST",
+        headers={},
+        ip="127.0.0.1",
+        endpoint="/comment",
+    )
 def test_payload_marks_mixed_attr_ldap_injection_probe():
     ctx = RequestContext(
         identity="u1",
@@ -514,6 +529,10 @@ def test_payload_marks_mixed_attr_ldap_injection_probe():
     assert res.score >= 0.7
 
 
+def test_payload_does_not_suppress_boolean_sqli_in_question():
+    ctx = RequestContext(
+        identity="u1",
+        payload="What happens with ' OR 1=1--?",
 def test_payload_marks_encoded_ldap_injection_probe():
     ctx = RequestContext(
         identity="u1",
@@ -767,6 +786,8 @@ def test_payload_marks_encoded_top_level_nosql_operator_text():
         ip="127.0.0.1",
         endpoint="/login",
     )
+    res = asyncio.run(PayloadSignal().extract(ctx))
+    assert res.score >= 0.7
 
     res = asyncio.run(PayloadSignal().extract(ctx))
     assert res.score >= 0.6
