@@ -277,6 +277,35 @@ class EventsScreen(WorkspaceView):
             "events-export": ActionAvailability(has, select_first),
         }
 
+        return {
+            "events-confirm": runtime(
+                ActionAvailability(
+                    has and verdict != "block",
+                    select_first if not has else "Already blocked",
+                ),
+                connected,
+            ),
+            "events-whitelist": runtime(ActionAvailability(has, select_first), connected),
+            "events-monitor": runtime(ActionAvailability(has, select_first), connected),
+            "events-unmonitor": runtime(ActionAvailability(has, select_first), connected),
+            "events-unblock-monitor": runtime(
+                ActionAvailability(
+                    has and verdict == "block",
+                    select_first if not has else "Only for blocked events",
+                ),
+                connected,
+            ),
+            "events-ban-ip": runtime(
+                ActionAvailability(has and has_ip, select_first if not has else "No IP on event"),
+                connected,
+            ),
+            "events-unban-ip": runtime(
+                ActionAvailability(has and has_ip, select_first if not has else "No IP on event"),
+                connected,
+            ),
+            "events-export": ActionAvailability(has, select_first),
+        }
+
     def _update_action_status(self) -> None:
         event = self._selected
         states = self._action_states(event)

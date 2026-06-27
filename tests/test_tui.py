@@ -282,6 +282,10 @@ async def test_events_disabled_actions_show_reasons(app):
         unblock = app.query_one("#events-unblock-monitor", Button)
         whitelist = app.query_one("#events-whitelist", Button)
         export_btn = app.query_one("#events-export", Button)
+        monitor = app.query_one("#events-monitor", Button)
+        unmonitor = app.query_one("#events-unmonitor", Button)
+        ban_ip = app.query_one("#events-ban-ip", Button)
+        unban_ip = app.query_one("#events-unban-ip", Button)
         status = app.query_one("#events-action-status", Static)
 
         assert confirm.disabled is True
@@ -290,6 +294,15 @@ async def test_events_disabled_actions_show_reasons(app):
         assert unblock.disabled is True
         assert "Requires live runtime connection" in (unblock.tooltip or "")
         assert whitelist.disabled is True
+        assert monitor.disabled is True
+        assert unmonitor.disabled is True
+        assert ban_ip.disabled is True
+        assert unban_ip.disabled is True
+
+        assert "Requires live runtime connection" in (monitor.tooltip or "")
+        assert "Requires live runtime connection" in (unmonitor.tooltip or "")
+        assert "Requires live runtime connection" in (ban_ip.tooltip or "")
+        assert "Requires live runtime connection" in (unban_ip.tooltip or "")
         assert export_btn.disabled is False
         status_text = str(status.render())
         assert "Disconnected" in status_text
