@@ -4,6 +4,85 @@ Custom signals are how you teach Adiuvare about rules that only make sense in
 your app. Use a soft signal when you want to add score, and a hard signal when
 you want to stop a request immediately.
 
+## Hard signal or soft signal?
+
+This is the first decision to make before writing any code. Getting it wrong
+means rewriting later.
+
+| | `HardSignal` | `SoftSignal` |
+| --- | --- | --- |
+| Runs in | `trackA` — fast gate | `trackB` — scored pipeline |
+| Returns | `True` to stop, `False` to pass | a `SignalResult` with a score |
+| Must be synchronous | **yes** — no I/O, no `await` | no — async and I/O are fine |
+| Skips the rest of the pipeline on match | **yes** — `trackB` never runs | no — score is combined with others |
+| Produces intermediate verdicts (`flag`, `throttle`) | no — only stops or passes | yes, indirectly through the score |
+
+**Use `HardSignal` when:**
+
+- the check is binary — the request either matches a known-bad pattern or it
+  does not
+- you want the request stopped immediately, before any scoring happens
+- the check can be done with in-process data only (a set lookup, a string
+  comparison, a header check)
+
+Good examples: banned IP, revoked token, blocked path prefix, required header
+missing.
+
+**Use `SoftSignal` when:**
+
+- the result is a degree of risk, not a hard yes or no
+- the check needs I/O (a cache read, a database query, an external API call)
+- you want the signal to combine with others before a verdict is reached
+
+Good examples: suspicious user-agent, payload pattern density, per-identity
+rate pressure, route-family heuristics.
+
+**If you find yourself wanting to do I/O inside `check()`, stop — that is a
+soft signal.**
+
+### Why hard signals must stay synchronous and fast
+
+`trackA` runs before scoring, before async work, and before your handler ever
+sees the request. Every millisecond added to a hard signal is paid on every
+request. `validate_hard_signal()` will raise `AdiuvareStartupError` at startup
+if your `check()` is async, so the rule is also enforced at boot time.
+
+Keep hard signals to in-process checks only: membership tests, string
+comparisons, integer comparisons. If you need external state, cache it at
+startup or write a soft signal instead.
+
+### How to verify a signal through the real guard path
+
+Unit-testing a signal's logic in isolation is a good start, but always run it
+through `guard.check_sync(...)` before opening a PR. That exercises the full
+`trackA → trackB` path and confirms the signal fires — and produces the right
+verdict — under real conditions.
+
+For a hard signal:
+
+```python
+gate, event = guard.check_sync(
+    "test:probe",
+    context={"path": "/_internal/jobs", "endpoint": "/_internal/jobs", "method": "GET"},
+)
+assert not gate.passed
+assert gate.block_reason == "private_path"
+assert event is None  # trackB was skipped
+```
+
+For a soft signal:
+
+```python
+gate, event = guard.check_sync(
+    "test:probe",
+    context={"path": "/search", "method": "GET", "headers": {"user-agent": "sqlmap/1.8"}},
+)
+# gate.passed may still be True if score did not cross the block threshold,
+# but the event should show the signal fired
+assert event is not None
+assert event.detail["signal_reasons"]["header_hint"] == "sqlmap_ua"
+```
+
 ## Quick example
 
 ```python
