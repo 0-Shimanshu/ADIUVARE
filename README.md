@@ -31,6 +31,23 @@ It is a good fit when you want middleware-level protection, request scoring,
 operator controls, and runtime visibility in one place, with SQLite by default
 and Redis available when you need a different backend.
 
+---
+
+## Table of Contents 
+
+- [What problem it solves](#what-problem-it-solves)
+- [Risk scoring, not rule filters](#risk-scoring-not-rule-filters)
+- [Installation](#installation)
+- [License](#license)
+- [Quick start](#quick-start)
+- [What it looks like](#what-it-looks-like)
+- [Common usage](#common-usage)
+- [Configuration](#configuration)
+- [Current scope](#current-scope)
+- [Payload coverage](#payload-coverage)
+- [Docs](#docs)
+- [Contributors](#contributors)
+
 ## What problem it solves
 
 Most teams start with request filters that look simple and feel reasonable:
@@ -355,3 +372,10 @@ Known detection boundaries and false-positive cases are documented in:
 - [FastAPI](docs/integrations/fastapi.md)
 - [Flask](docs/integrations/flask.md)
 - [Django](docs/integrations/django.md)
+
+
+## 👥 Contributors
+
+Thanks to all contributors ❤️
+
+[![Contributors](https://contrib.rocks/image?repo=0-Shimanshu/ADIUVARE)](https://github.com/0-Shimanshu/ADIUVARE/graphs/contributors)
