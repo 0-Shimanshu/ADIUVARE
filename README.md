@@ -107,16 +107,22 @@ With the TUI:
 python -m pip install ".[tui]"
 ```
 
+With the SQLAlchemy sink integration:
+
+```bash
+python -m pip install ".[sink]"
+```
+
 With Redis support:
 
 ```bash
 python -m pip install ".[redis]"
 ```
 
-With both:
+With everything:
 
 ```bash
-python -m pip install ".[tui,redis]"
+python -m pip install ".[tui,sink,redis]"
 ```
 
 After install, the `adv` command is available in that environment.

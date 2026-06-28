@@ -14,6 +14,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+sink = [
+  "sqlalchemy",
+]
 dev = [
   "pytest",
   "pytest-asyncio",

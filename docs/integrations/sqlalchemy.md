@@ -4,6 +4,22 @@ Adiuvare can inspect SQL statements close to the sink. This is not the main
 request middleware path. It is the extra layer that runs near real SQL
 execution when you want a last checkpoint there too.
 
+## Install
+
+The SQLAlchemy sink integration requires SQLAlchemy. Install it via the `sink`
+extra:
+
+```bash
+# from GitHub (before PyPI publish)
+pip install "adiuvare[sink] @ git+https://github.com/0-Shimanshu/ADIUVARE.git"
+
+# local development
+pip install -e ".[sink]"
+
+# once published to PyPI
+pip install "adiuvare[sink]"
+```
+
 ## Quick example
 
 ```python

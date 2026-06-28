@@ -1,7 +1,5 @@
 from contextvars import ContextVar
 
-from sqlalchemy import event
-
 from ..signals.patterns import check_sql
 from ..vendor import detect_sqli, normalize
 
@@ -41,6 +39,9 @@ def check_statement(
 
 
 def attach_sink(engine, guard) -> None:
+    
+    from sqlalchemy import event
+
     if getattr(engine, "_adiuvare_guard", None) is guard:
         return
 

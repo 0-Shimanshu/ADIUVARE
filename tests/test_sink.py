@@ -1,9 +1,10 @@
 import pytest
-import sqlalchemy as sa
 
-from adiuvare import Guard
-from adiuvare.integrations.django_sink import wrap_query
-from adiuvare.integrations.sqlalchemy import AdiuvareBlockError, _sink_mode, attach_sink, check_statement
+sa = pytest.importorskip("sqlalchemy", reason="sqlalchemy not installed, skipping sink tests")
+
+from adiuvare import Guard  # noqa: E402
+from adiuvare.integrations.django_sink import wrap_query  # noqa: E402
+from adiuvare.integrations.sqlalchemy import AdiuvareBlockError, _sink_mode, attach_sink, check_statement  # noqa: E402
 
 
 def test_sqlalchemy_sink_can_block_inline():

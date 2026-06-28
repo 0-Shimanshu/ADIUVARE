@@ -18,6 +18,12 @@ If you also want the TUI:
 python -m pip install "adiuvare[tui] @ git+https://github.com/0-Shimanshu/ADIUVARE.git"
 ```
 
+If you want the SQLAlchemy sink integration:
+
+```bash
+python -m pip install "adiuvare[sink] @ git+https://github.com/0-Shimanshu/ADIUVARE.git"
+```
+
 If you want the Redis backend too:
 
 ```bash

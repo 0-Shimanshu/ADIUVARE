@@ -7,6 +7,24 @@ and direct block or throttle outcomes.
 Use the explicit Django attach path here. `Guard.auto(...)` is not the right
 shortcut for Django at the moment.
 
+## Sink install
+
+If you want to use the SQLAlchemy sink integration alongside Django, install
+the `sink` extra:
+
+```bash
+# from GitHub (before PyPI publish)
+pip install "adiuvare[sink] @ git+https://github.com/0-Shimanshu/ADIUVARE.git"
+
+# local development
+pip install -e ".[sink]"
+
+# once published to PyPI
+pip install "adiuvare[sink]"
+```
+
+See [SQLAlchemy sink](../integrations/sqlalchemy.md) for usage.
+
 ## Working example
 
 A maintained Django demo is available here:

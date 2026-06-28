@@ -12,6 +12,7 @@ Use these commands to install Adiuvare directly from GitHub into your environmen
 | --- | --- |
 | core library | `python -m pip install "git+https://github.com/0-Shimanshu/ADIUVARE.git"` |
 | core + TUI | `python -m pip install "adiuvare[tui] @ git+https://github.com/0-Shimanshu/ADIUVARE.git"` |
+| core + SQLAlchemy sink | `python -m pip install "adiuvare[sink] @ git+https://github.com/0-Shimanshu/ADIUVARE.git"` |
 | core + Redis | `python -m pip install "adiuvare[redis] @ git+https://github.com/0-Shimanshu/ADIUVARE.git"` |
 
 ### For Project Contributors (Local Repository Clone)
@@ -22,7 +23,7 @@ If you are a developer working directly inside a local clone of the repository s
 | --- | --- |
 | editable local dev | `python -m pip install -e .` |
 | editable dev test stack | `python -m pip install -e ".[dev]"` |
-| editable dev with extras | `python -m pip install -e ".[dev,tui,redis]"` |
+| editable dev with extras | `python -m pip install -e ".[dev,tui,sink,redis]"` |
 
 ## Verify the install
 
@@ -75,6 +76,27 @@ The current TUI has seven screens:
 - AI
 - Audit
 - Changes
+
+## Sink install
+
+If you want to use the SQLAlchemy sink integration (`attach_sink()`), install
+the sink extra.
+
+```bash
+python -m pip install "adiuvare[sink] @ git+https://github.com/0-Shimanshu/ADIUVARE.git"
+```
+
+For local development:
+
+```bash
+pip install -e ".[sink]"
+```
+
+Once Adiuvare is published to PyPI, the shorter form will work:
+
+```bash
+pip install "adiuvare[sink]"
+```
 
 ## Redis install
 
@@ -161,6 +183,14 @@ If the compiled detector is unavailable, Adiuvare falls back to Python
 heuristics. That keeps the runtime usable, but it is still the weaker path.
 
 ## Troubleshooting
+
+### `SQLAlchemy is required to use attach_sink()`
+
+Install the sink extra:
+
+```bash
+pip install "adiuvare[sink] @ git+https://github.com/0-Shimanshu/ADIUVARE.git"
+```
 
 ### `tui deps are missing`
 

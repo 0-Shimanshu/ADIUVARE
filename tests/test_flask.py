@@ -179,6 +179,12 @@ def test_flask_route_cfg_can_skip_trackB():
     assert res.status_code == 200
 
 
+def test_flask_middleware_import_does_not_require_sqlalchemy():
+    
+    from adiuvare.integrations.flask import AdiuvareMiddleware
+    assert AdiuvareMiddleware is not None
+
+
 def _capture_flask_payload(monkeypatch, guard, client_call_func) -> str | None:
     captured = None
 
