@@ -1,4 +1,5 @@
 import asyncio
+import io
 import json
 
 from werkzeug.wrappers import Request, Response
@@ -14,6 +15,10 @@ class AdiuvareMiddleware:
         self._flask = flask_app
 
     def __call__(self, environ, start_response):
+        content_length = int(environ.get("CONTENT_LENGTH") or 0)
+        body_bytes = environ["wsgi.input"].read(content_length) if content_length > 0 else b""
+        environ["wsgi.input"] = io.BytesIO(body_bytes)
+
         req = Request(environ)
         raw_ip = req.headers.get("x-forwarded-for", "")
         ip = raw_ip.split(",", 1)[0].strip() or req.remote_addr or "127.0.0.1"
@@ -21,7 +26,7 @@ class AdiuvareMiddleware:
         if route_cfg.get("exempt"):
             return self._app(environ, start_response)
 
-        body_text = req.get_data(as_text=True)
+        body_text = body_bytes.decode("utf-8", errors="replace")
         query_text = req.query_string.decode("utf-8") if req.query_string else ""
         payload = ctx_payload(body_text, query_text)
 

@@ -462,3 +462,25 @@ def test_threadsafe_items_returns_all_identities():
     assert len(result) == 5
     for i in range(5):
         assert f"user-{i}" in identities
+
+
+def test_flask_request_json_readable_after_middleware_inspection():
+    
+    app = Flask(__name__)
+    guard = Guard()
+    guard.use(app, framework="flask")
+
+    @app.post("/notes")
+    def create_note():
+        data = request.get_json(silent=True)
+        assert data is not None
+        return jsonify(received=data), 201
+
+    client = app.test_client()
+    res = client.post(
+        "/notes",
+        json={"title": "Shopping List", "body": "milk, bread"},
+        headers={"x-user-id": "u1"},
+    )
+    assert res.status_code == 201
+    assert res.get_json() == {"received": {"title": "Shopping List", "body": "milk, bread"}}
