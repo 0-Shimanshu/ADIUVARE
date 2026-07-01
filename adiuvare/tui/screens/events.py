@@ -5,7 +5,8 @@ from rich.text import Text
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, HorizontalScroll, Vertical
-from textual.widgets import Button, DataTable, Input, Static
+from textual.widgets import Button, Input, Static
+from adiuvare.tui.sortable_table import SortableDataTable
 
 from ..operator_actions import (
     ActionAvailability,
@@ -55,7 +56,7 @@ class EventsScreen(WorkspaceView):
                 yield Input(placeholder="identity", id="events-identity-filter")
                 yield Input(placeholder="flag / throttle / block", id="events-verdict-filter")
                 yield Static("", id="events-filter-stats")
-            yield DataTable(id="events-table")
+            yield SortableDataTable(id="events-table")
             with Horizontal(id="events-detail-area"):
                 yield Static("", id="events-detail-panel")
                 yield Static("", id="events-context-panel")
@@ -71,7 +72,7 @@ class EventsScreen(WorkspaceView):
                 yield Static("", id="events-action-status")
 
     def on_mount(self) -> None:
-        table = self.query_one("#events-table", DataTable)
+        table = self.query_one("#events-table", SortableDataTable)
         table.cursor_type = "row"
         table.add_columns("VERDICT", "SCORE", "IDENTITY", "ENDPOINT", "IP", "DOMINANT", "AGE")
         self.refresh_view()
@@ -87,10 +88,10 @@ class EventsScreen(WorkspaceView):
             self.refresh_view()
             event.stop()
 
-    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+    def on_data_table_row_selected(self, event: SortableDataTable.RowSelected) -> None:
         self._select_row(event.cursor_row)
 
-    def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
+    def on_data_table_row_highlighted(self, event: SortableDataTable.RowHighlighted) -> None:
         self._select_row(event.cursor_row)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -199,7 +200,7 @@ class EventsScreen(WorkspaceView):
             f"[{PALETTE['red']}]x {blocks}[/]"
         )
 
-        table = self.query_one("#events-table", DataTable)
+        table = self.query_one("#events-table", SortableDataTable)
         table.clear(columns=False)
         for row in rows:
             verdict = str(row.get("verdict", "allow"))
@@ -312,7 +313,7 @@ class EventsScreen(WorkspaceView):
             styled_label("Identity", str(event.get("identity", "?"))),
             styled_label("Endpoint", f"[{PALETTE['dim']}]{event.get('endpoint', '?')}[/]"),
             styled_label("IP", str(event.get("ip", "-") or "-")),
-            f"[{PALETTE['dim']}]Score         [/] {render_score_bar(score)} [{PALETTE['cyan']}]{score:.4f}[/]",
+            f"[{PALETTE['dim']}]Score        [/] {render_score_bar(score)} [{PALETTE['cyan']}]{score:.4f}[/]",
             styled_label("Verdict", f"[{verdict_color}]{decision_icon(verdict)} {verdict.upper()}[/]"),
         ]
 
