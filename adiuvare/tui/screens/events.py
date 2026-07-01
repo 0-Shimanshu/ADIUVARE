@@ -17,13 +17,12 @@ from ..operator_actions import (
 from ..workspace import (
     PALETTE,
     WorkspaceView,
-    decision_color,
-    decision_icon,
     dominant_color,
     render_score_bar,
     render_signal_bar,
     styled_label,
     styled_separator,
+    render_decision_badge,
 )
 
 if TYPE_CHECKING:
@@ -209,10 +208,9 @@ class EventsScreen(WorkspaceView):
             ip = str(row.get("ip", "-") or "-")[:15]
             dominant = str(row.get("dominant", "-"))
             age = str(row.get("age", "-"))
-            icon = decision_icon(verdict)
-            color = decision_color(verdict)
+           
             table.add_row(
-                Text(f" {icon} {verdict.upper():<9}", style=f"{color} bold"),
+                Text(render_decision_badge(verdict), style="bold"),
                 Text(f"{score:.4f}", style=PALETTE["cyan"]),
                 Text(identity, style=PALETTE["text"]),
                 Text(endpoint, style=PALETTE["dim"]),
@@ -302,7 +300,6 @@ class EventsScreen(WorkspaceView):
         event = self._selected
         verdict = str(event.get("verdict", "allow"))
         score = float(event.get("score", 0))
-        verdict_color = decision_color(verdict)
         breakdown = event.get("breakdown") or {}
         detail = event.get("detail") or {}
 
@@ -313,7 +310,7 @@ class EventsScreen(WorkspaceView):
             styled_label("Endpoint", f"[{PALETTE['dim']}]{event.get('endpoint', '?')}[/]"),
             styled_label("IP", str(event.get("ip", "-") or "-")),
             f"[{PALETTE['dim']}]Score         [/] {render_score_bar(score)} [{PALETTE['cyan']}]{score:.4f}[/]",
-            styled_label("Verdict", f"[{verdict_color}]{decision_icon(verdict)} {verdict.upper()}[/]"),
+            styled_label("Verdict", render_decision_badge(verdict)),
         ]
 
         if isinstance(breakdown, dict) and breakdown:
