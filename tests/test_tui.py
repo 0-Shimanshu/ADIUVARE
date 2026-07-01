@@ -11,6 +11,10 @@ from adiuvare.core.models import AdiuvareEvent
 HAS_TEXTUAL = importlib.util.find_spec("textual") is not None
 
 if HAS_TEXTUAL:
+    import io
+    from rich.console import Console
+    from textual.layouts.vertical import VerticalLayout
+    from textual.containers import VerticalScroll
     from textual.widgets import Button, ContentSwitcher, DataTable, Input, Select, Static
 
     from adiuvare.tui.app import AdiuvareApp
@@ -260,6 +264,56 @@ async def test_events_filter_reduces_rows(app):
         await pilot.pause()
         table = app.query_one("#events-table")
         assert table.row_count == 1
+
+
+@pytest.mark.asyncio
+async def test_events_screen_layout_has_sidebar_sections(app):
+    async with app.run_test() as pilot:
+        await pilot.press("2")
+        assert app.query_one("#events-header-notice", Static)
+        assert app.query_one("#events-body")
+        assert app.query_one("#events-right-col")
+        assert app.query_one("#events-detail-panel", VerticalScroll)
+        assert app.query_one("#events-detail-text", Static)
+        assert app.query_one("#events-context-panel", VerticalScroll)
+        assert app.query_one("#events-context-text", Static)
+
+
+@pytest.mark.asyncio
+async def test_events_detail_elides_long_endpoint(app):
+    long_endpoint = "GET /this/is/a/very/long/path/that/should/not/blow/out/the/detail/panel/width?with=query&params=true"
+    app.audit.write(
+        AdiuvareEvent(
+            identity="user:long-endpoint",
+            endpoint=long_endpoint,
+            score=0.73,
+            verdict="flag",
+            breakdown={"payload": 0.73},
+            detail={"ip": "203.0.113.8"},
+        )
+    )
+    async with app.run_test() as pilot:
+        await pilot.press("2")
+        await pilot.pause()
+        detail = app.query_one("#events-detail-text", Static)
+        rendered = detail.render()._renderable
+        console = Console(width=48, record=True, color_system=None, force_terminal=False, file=io.StringIO())
+        console.print(rendered)
+        exported = console.export_text()
+        assert "Endpoint" in exported
+        assert "…" in exported
+
+
+@pytest.mark.asyncio
+async def test_events_layout_stacks_on_narrow_terminal(app):
+    async with app.run_test(size=(60, 24)) as pilot:
+        await pilot.press("2")
+        await pilot.pause()
+        body = app.query_one("#events-body")
+        right_col = app.query_one("#events-right-col")
+        assert isinstance(body.styles.layout, VerticalLayout)
+        # Sidebar should stop enforcing a minimum width on narrow terminals.
+        assert int(right_col.styles.min_width.value) == 0
 
 
 @pytest.mark.asyncio
