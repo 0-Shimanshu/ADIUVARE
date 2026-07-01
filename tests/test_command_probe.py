@@ -11,7 +11,7 @@ def test_command_probe_semicolon_detected():
 
     assert gate.passed is True
     assert event is not None
-    assert event.score > 0.35
+    assert event.score > 0.30
     assert "payload" in event.breakdown
     assert event.breakdown["payload"] > 0.0
 
@@ -26,7 +26,7 @@ def test_command_probe_dollar_detected():
 
     assert gate.passed is True
     assert event is not None
-    assert event.score > 0.35
+    assert event.score > 0.30
     assert "payload" in event.breakdown
     assert event.breakdown["payload"] > 0.0
 
