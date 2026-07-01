@@ -1,10 +1,11 @@
+import json
 import sys
 import time
 from types import SimpleNamespace
 
 import yaml
 
-from adiuvare.cli import _find_cfg, _find_socket, _open_tui, _plain_terminal_wizard, _run_config_set, _run_init, _run_ip_ban, _run_ip_unban, _run_logs, _run_status
+from adiuvare.cli import _find_cfg, _find_socket, _open_tui, _plain_terminal_wizard, _run_config_set, _run_init, _run_ip_ban, _run_ip_unban, _run_logs, _run_report, _run_status
 from adiuvare.core.models import AdiuvareEvent
 from adiuvare.state.audit_log import AuditLog
 
@@ -53,27 +54,143 @@ def test_run_config_set_patches_nested_value(tmp_path, monkeypatch):
 
 
 def test_run_logs_prints_recent_rows(tmp_path, monkeypatch, capsys):
-    cfg = tmp_path / "adiuvare.yaml"
-    audit_path = tmp_path / "audit.db"
-    cfg.write_text(
-        yaml.safe_dump({"runtime": {"audit_db_path": str(audit_path), "state_db_path": str(tmp_path / "state.db")}}),
-        encoding="utf-8",
-    )
-    audit = AuditLog(audit_path)
-    audit.write(
-        AdiuvareEvent(
-            identity="user:1",
-            endpoint="GET /health",
-            score=0.0,
-            verdict="allow",
-            breakdown={},
-        )
+    _write_cli_audit(
+        tmp_path,
+        [
+            AdiuvareEvent(
+                identity="user:1",
+                endpoint="GET /health",
+                score=0.0,
+                verdict="allow",
+                breakdown={},
+            )
+        ],
     )
     monkeypatch.chdir(tmp_path)
     _run_logs(5)
     out = capsys.readouterr().out
     assert "user:1" in out
     assert "GET /health" in out
+
+
+def test_run_logs_prints_json_rows(tmp_path, monkeypatch, capsys):
+    _write_cli_audit(
+        tmp_path,
+        [
+            AdiuvareEvent(
+                identity="user:1",
+                endpoint="GET /health",
+                score=0.0,
+                verdict="allow",
+                breakdown={},
+            )
+        ],
+    )
+    monkeypatch.chdir(tmp_path)
+    _run_logs(5, output_format="json")
+    rows = json.loads(capsys.readouterr().out)
+    assert rows[0]["identity"] == "user:1"
+    assert rows[0]["endpoint"] == "GET /health"
+    assert rows[0]["verdict"] == "allow"
+
+
+def test_run_logs_prints_jsonl_rows(tmp_path, monkeypatch, capsys):
+    _write_cli_audit(
+        tmp_path,
+        [
+            AdiuvareEvent(
+                identity="user:1",
+                endpoint="GET /health",
+                score=0.0,
+                verdict="allow",
+                breakdown={},
+            ),
+            AdiuvareEvent(
+                identity="user:2",
+                endpoint="POST /review",
+                score=0.3,
+                verdict="flag",
+                breakdown={},
+            ),
+        ],
+    )
+    monkeypatch.chdir(tmp_path)
+    _run_logs(5, output_format="jsonl")
+    rows = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    assert len(rows) == 2
+    assert {row["identity"] for row in rows} == {"user:1", "user:2"}
+    assert {row["verdict"] for row in rows} == {"allow", "flag"}
+
+
+def test_run_report_prints_markdown_by_default(tmp_path, monkeypatch, capsys):
+    _write_cli_audit(
+        tmp_path,
+        [
+            AdiuvareEvent(
+                identity="user:1",
+                endpoint="GET /health",
+                score=0.0,
+                verdict="allow",
+                breakdown={},
+            ),
+            AdiuvareEvent(
+                identity="user:2",
+                endpoint="POST /review",
+                score=0.3,
+                verdict="flag",
+                breakdown={},
+            ),
+        ],
+    )
+    monkeypatch.chdir(tmp_path)
+    _run_report()
+    out = capsys.readouterr().out
+    assert "# Adiuvare report" in out
+    assert "- rows: 2" in out
+    assert "- allow: 1" in out
+    assert "- flag: 1" in out
+
+
+def test_run_report_prints_json(tmp_path, monkeypatch, capsys):
+    _write_cli_audit(
+        tmp_path,
+        [
+            AdiuvareEvent(
+                identity="user:1",
+                endpoint="GET /health",
+                score=0.0,
+                verdict="allow",
+                breakdown={},
+            )
+        ],
+    )
+    monkeypatch.chdir(tmp_path)
+    _run_report(output_format="json")
+    report = json.loads(capsys.readouterr().out)
+    assert report["rows"] == 1
+    assert report["verdicts"]["allow"] == 1
+    assert report["busiest_identities"] == [{"identity": "user:1", "count": 1}]
+
+
+def test_run_report_saves_json(tmp_path, monkeypatch, capsys):
+    _write_cli_audit(
+        tmp_path,
+        [
+            AdiuvareEvent(
+                identity="user:1",
+                endpoint="GET /health",
+                score=0.0,
+                verdict="allow",
+                breakdown={},
+            )
+        ],
+    )
+    monkeypatch.chdir(tmp_path)
+    _run_report(save=True, output_format="json")
+    capsys.readouterr()
+    saved = json.loads((tmp_path / "adiuvare_report.json").read_text(encoding="utf-8"))
+    assert saved["rows"] == 1
+    assert saved["verdicts"]["allow"] == 1
 
 
 def test_run_status_prints_framework_and_instances(tmp_path, monkeypatch, capsys):
@@ -241,3 +358,15 @@ def test_run_ip_ban_exits_when_runtime_is_offline(monkeypatch, capsys):
 
     err = capsys.readouterr().err
     assert "runtime: offline" in err
+
+
+def _write_cli_audit(tmp_path, events):
+    cfg = tmp_path / "adiuvare.yaml"
+    audit_path = tmp_path / "audit.db"
+    cfg.write_text(
+        yaml.safe_dump({"runtime": {"audit_db_path": str(audit_path), "state_db_path": str(tmp_path / "state.db")}}),
+        encoding="utf-8",
+    )
+    audit = AuditLog(audit_path)
+    for event in events:
+        audit.write(event)

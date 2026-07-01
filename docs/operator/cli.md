@@ -11,8 +11,8 @@ TUI.
 | `adv init [--path adiuvare.yaml] [--no-tui]` | write a starter config |
 | `adv status` | show config and runtime status |
 | `adv config set <dotted.key> <value>` | update one config value |
-| `adv logs [--tail 20]` | show recent audit rows |
-| `adv report [--save]` | print or save a small local summary |
+| `adv logs [--tail 20] [--format text\|json\|jsonl]` | show recent audit rows |
+| `adv report [--save] [--format markdown\|json]` | print or save a small local summary |
 | `adv ban-ip <ip>` | ban an IP in a connected runtime |
 | `adv unban-ip <ip>` | remove an IP ban in a connected runtime |
 | `adv` | open the TUI |
@@ -187,6 +187,14 @@ block    user:9 /admin/login
 
 This is the fastest human-readable view of "what just happened?"
 
+The default format is `text`, so existing usage does not need to change. For
+automation, choose JSON or JSONL explicitly:
+
+```bash
+adv logs --tail 20 --format json
+adv logs --tail 20 --format jsonl
+```
+
 ## adv report
 
 `adv report` builds a small local summary from recent audit rows.
@@ -217,6 +225,20 @@ adv report --save
 
 The command writes `adiuvare_report.md` in the current directory. The save does
 not print an extra success line.
+
+The default format is `markdown`. To emit machine-readable report data:
+
+```bash
+adv report --format json
+```
+
+To save the JSON report instead of Markdown:
+
+```bash
+adv report --save --format json
+```
+
+The command writes `adiuvare_report.json` in the current directory.
 
 ## adv ban-ip
 

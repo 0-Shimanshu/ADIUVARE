@@ -178,7 +178,6 @@ def test_flask_route_cfg_can_skip_trackB():
     )
     assert res.status_code == 200
 
-
 def _capture_flask_payload(monkeypatch, guard, client_call_func) -> str | None:
     captured = None
 

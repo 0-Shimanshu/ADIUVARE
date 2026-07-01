@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import json
 import sys
 import tempfile
 from collections import Counter
@@ -31,9 +32,11 @@ def main() -> None:
 
     p_logs = sub.add_parser("logs", help="print recent audit rows")
     p_logs.add_argument("--tail", type=int, default=20)
+    p_logs.add_argument("--format", choices=["text", "json", "jsonl"], default="text")
 
     p_report = sub.add_parser("report", help="print a local markdown summary")
     p_report.add_argument("--save", action="store_true")
+    p_report.add_argument("--format", choices=["markdown", "json"], default="markdown")
 
     p_ban_ip = sub.add_parser("ban-ip", help="ban an ip in the running runtime")
     p_ban_ip.add_argument("ip")
@@ -52,9 +55,9 @@ def main() -> None:
     elif args.cmd == "config":
         _run_config_set(args.key, args.value)
     elif args.cmd == "logs":
-        _run_logs(args.tail)
+        _run_logs(args.tail, output_format=args.format)
     elif args.cmd == "report":
-        _run_report(save=args.save)
+        _run_report(save=args.save, output_format=args.format)
     elif args.cmd == "ban-ip":
         _run_ip_ban(args.ip)
     elif args.cmd == "unban-ip":
@@ -175,38 +178,73 @@ def _run_config_set(key: str, value: str) -> None:
     cfg.write_text(yaml.safe_dump(raw, sort_keys=False), encoding="utf-8")
 
 
-def _run_logs(tail: int) -> None:
+def _run_logs(tail: int, output_format: str = "text") -> None:
     cfg = _must_cfg()
     loaded = load_config(cfg)
     audit = AuditLog(loaded.runtime.audit_db_path)
-    for row in audit.recent(limit=tail):
+    rows = audit.recent(limit=tail)
+    if output_format == "json":
+        print(json.dumps(rows))
+        return
+    if output_format == "jsonl":
+        for row in rows:
+            print(json.dumps(row))
+        return
+    for row in rows:
         print(f"{row.get('verdict', '?'):8} {row.get('identity', '?')} {row.get('endpoint', '?')}")
 
 
-def _run_report(save: bool = False) -> None:
+def _run_report(save: bool = False, output_format: str = "markdown") -> None:
     cfg = _must_cfg()
     loaded = load_config(cfg)
     audit = AuditLog(loaded.runtime.audit_db_path)
     rows = audit.recent(limit=200)
+    report_data = _report_data(rows)
+    if output_format == "json":
+        report = json.dumps(report_data, indent=2)
+        save_path = Path("adiuvare_report.json")
+    else:
+        report = _markdown_report(report_data)
+        save_path = Path("adiuvare_report.md")
+    print(report)
+    if save:
+        save_path.write_text(report, encoding="utf-8")
+
+
+def _report_data(rows: list[dict]) -> dict[str, Any]:
     counts = Counter(str(row.get("verdict", "allow")) for row in rows)
     top_ids = Counter(str(row.get("identity", "?")) for row in rows).most_common(5)
+    return {
+        "rows": len(rows),
+        "verdicts": {
+            "allow": counts.get("allow", 0),
+            "flag": counts.get("flag", 0),
+            "throttle": counts.get("throttle", 0),
+            "block": counts.get("block", 0),
+        },
+        "busiest_identities": [
+            {"identity": identity, "count": count}
+            for identity, count in top_ids
+        ],
+    }
+
+
+def _markdown_report(report_data: dict[str, Any]) -> str:
+    verdicts = report_data["verdicts"]
     lines = [
         "# Adiuvare report",
         "",
-        f"- rows: {len(rows)}",
-        f"- allow: {counts.get('allow', 0)}",
-        f"- flag: {counts.get('flag', 0)}",
-        f"- throttle: {counts.get('throttle', 0)}",
-        f"- block: {counts.get('block', 0)}",
+        f"- rows: {report_data['rows']}",
+        f"- allow: {verdicts.get('allow', 0)}",
+        f"- flag: {verdicts.get('flag', 0)}",
+        f"- throttle: {verdicts.get('throttle', 0)}",
+        f"- block: {verdicts.get('block', 0)}",
         "",
         "## busiest identities",
     ]
-    for identity, count in top_ids:
-        lines.append(f"- {identity}: {count}")
-    report = "\n".join(lines)
-    print(report)
-    if save:
-        Path("adiuvare_report.md").write_text(report, encoding="utf-8")
+    for item in report_data["busiest_identities"]:
+        lines.append(f"- {item['identity']}: {item['count']}")
+    return "\n".join(lines)
 
 
 def _run_ip_ban(ip: str) -> None:
