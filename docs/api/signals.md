@@ -4,6 +4,15 @@ Signals are Adiuvare's public extension surface for custom scoring and custom
 fast-gate checks. If built-in payload, behavior, identity, context, and IP
 hints are not enough for your app, this is where you extend the runtime.
 
+## Hard signal or soft signal?
+
+`HardSignal` runs synchronously in `trackA` and stops a request immediately
+on match. `SoftSignal` runs in `trackB`, can do I/O, and contributes a score
+instead of a hard stop.
+
+See [Custom signals](../extending/custom-signals.md#hard-signal-or-soft-signal)
+for the full comparison table, when to use each, and verification examples.
+
 ## Quick example
 
 ```python
@@ -140,7 +149,10 @@ scoring path matters.
 - `block`
 - `hold`
 
-`check()` must stay synchronous and fast.
+`check()` must stay synchronous and fast. It runs on every request before
+scoring starts, so any I/O here adds latency to the entire pipeline.
+`validate_hard_signal()` enforces this at startup — async implementations
+raise `AdiuvareStartupError`.
 
 Example:
 
