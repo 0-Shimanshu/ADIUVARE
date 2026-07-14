@@ -58,6 +58,39 @@ through `guard.check_sync(...)` before opening a PR. That exercises the full
 `trackA → trackB` path and confirms the signal fires — and produces the right
 verdict — under real conditions.
 
+Set up a guard with your signal(s) registered first. For example, a hard
+signal that blocks a private path prefix, and a soft signal that flags a
+known scanner user-agent:
+
+```python
+from adiuvare import Guard
+from adiuvare.signals.base import HardSignal, SoftSignal
+from adiuvare.core.models import SignalResult
+
+class PrivatePathSignal(HardSignal):
+    name = "private_path"
+    action = "block"
+
+    def check(self, ctx):
+        return ctx.endpoint.startswith("/_internal")
+
+class SuspiciousHeaderSignal(SoftSignal):
+    name = "header_hint"
+    weight = 0.10
+
+    async def extract(self, ctx):
+        agent = ctx.headers.get("user-agent", "")
+        if "sqlmap" in agent.lower():
+            return SignalResult(score=0.25, reason="sqlmap_ua")
+        return SignalResult(score=0.0, reason="clean")
+
+guard = Guard.from_config(
+    "adiuvare.yaml",
+    hard_signals=[PrivatePathSignal()],
+    soft_signals=[SuspiciousHeaderSignal()],
+)
+```
+
 For a hard signal:
 
 ```python
