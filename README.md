@@ -155,6 +155,8 @@ Generate a config:
 adv init --no-tui
 ```
 
+> **Verification:** Confirm that an `adiuvare.yaml` configuration file has been created in your project directory before integrating the guard into your application.
+
 Then attach the guard to your app:
 
 ```python
